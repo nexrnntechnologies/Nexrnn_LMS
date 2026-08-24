@@ -103,3 +103,4 @@ nexrnn-lms/
 
 You can go back to demo mode anytime by removing/renaming `.env`.
 
+"# Nexrnn_LMS" 
