@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams, useOutletContext } from "react-router-dom";
 import {
   ArrowLeft, Clock, BarChart2, Monitor, FolderKanban, Award, Users2,
   PlayCircle, ChevronDown, ChevronUp, CheckCircle, Video, FileText,
@@ -6,6 +7,8 @@ import {
 } from "lucide-react";
 import { NAVY, BLUE } from "../theme";
 import LockedContentModal from "../components/LockedContentModal.jsx";
+import { CURRICULUM_BY_COURSE } from "../data/mockData";
+import { fetchCourseCurriculum } from "../services/courses.js";
 
 function MetaBox({ icon: Icon, label, value }) {
   return (
@@ -35,17 +38,31 @@ function FaqItem({ faq, open, onToggle }) {
   );
 }
 
-export default function CourseDetailView({ course, curriculum, enrolled, onBack, onEnroll, onStartLesson }) {
-  const [openModule, setOpenModule] = useState(curriculum?.[0]?.id);
+export default function CourseDetailView() {
+  const { courseId } = useParams();
+  const navigate = useNavigate();
+  const { courses, enrolledIds, enrollCourse } = useOutletContext();
+  const course = courses.find((c) => c.id === courseId);
+  const enrolled = enrolledIds.includes(courseId);
+
+  const [curriculum, setCurriculum] = useState(CURRICULUM_BY_COURSE[courseId] || []);
+  const [openModule, setOpenModule] = useState(null);
   const [openFaq, setOpenFaq] = useState(null);
   const [lockedModalOpen, setLockedModalOpen] = useState(false);
+
+  useEffect(() => {
+    fetchCourseCurriculum(courseId).then((data) => {
+      setCurriculum(data);
+      setOpenModule(data?.[0]?.id);
+    });
+  }, [courseId]);
 
   if (!course) return null;
   const Icon = course.icon;
 
   const handleLessonClick = (lesson) => {
     if (enrolled || lesson.freePreview) {
-      onStartLesson(course, lesson);
+      navigate(`/my-courses/${course.id}?lesson=${lesson.id}`);
     } else {
       setLockedModalOpen(true);
     }
@@ -55,7 +72,7 @@ export default function CourseDetailView({ course, curriculum, enrolled, onBack,
     <div className="bg-slate-50 min-h-[calc(100vh-64px)]">
       <div className="max-w-6xl mx-auto px-6 py-10">
         <button
-          onClick={onBack}
+          onClick={() => navigate("/courses")}
           className="flex items-center gap-1.5 text-sm font-bold mb-6 hover:underline"
           style={{ color: BLUE }}
         >
@@ -114,7 +131,7 @@ export default function CourseDetailView({ course, curriculum, enrolled, onBack,
               </div>
 
               <button
-                onClick={() => onEnroll(course)}
+                onClick={() => enrollCourse(course)}
                 className="w-full font-bold text-white rounded-md py-3 flex items-center justify-center gap-2 hover:opacity-90"
                 style={{ backgroundColor: BLUE }}
               >
@@ -255,7 +272,7 @@ export default function CourseDetailView({ course, curriculum, enrolled, onBack,
           onClose={() => setLockedModalOpen(false)}
           onBuyNow={() => {
             setLockedModalOpen(false);
-            onEnroll(course);
+            enrollCourse(course);
           }}
         />
       )}

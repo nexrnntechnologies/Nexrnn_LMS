@@ -1,8 +1,10 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { Clock, FolderKanban, Award, Star, ArrowRight } from "lucide-react";
 import { NAVY, BLUE } from "../theme";
 
-export default function CourseCard({ course, onView, onViewDetail, onEnroll, enrolled }) {
+export default function CourseCard({ course, onEnroll, enrolled }) {
+  const navigate = useNavigate();
   const Icon = course.icon;
   return (
     <div className="rounded-xl overflow-hidden border border-slate-200 bg-white shadow-sm hover:shadow-md transition flex flex-col h-full">
@@ -47,13 +49,13 @@ export default function CourseCard({ course, onView, onViewDetail, onEnroll, enr
 
         <div className="flex gap-2 pt-2 mt-auto">
           <button
-            onClick={() => onViewDetail(course)}
+            onClick={() => navigate(`/courses/${course.id}`)}
             className="flex-1 text-sm font-semibold border border-slate-300 rounded-md py-2 hover:bg-slate-50"
           >
             View Course
           </button>
           <button
-            onClick={() => (enrolled ? onView(course) : onEnroll(course))}
+            onClick={() => (enrolled ? navigate(`/my-courses/${course.id}`) : onEnroll(course))}
             className="flex-1 text-sm font-semibold text-white rounded-md py-2 flex items-center justify-center gap-1 hover:opacity-90"
             style={{ backgroundColor: enrolled ? "#16A34A" : BLUE }}
           >

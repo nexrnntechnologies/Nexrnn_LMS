@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, BookOpen, Users, Bell, User, ChevronDown, LifeBuoy, LogOut, ExternalLink } from "lucide-react";
 import Logo from "./Logo.jsx";
 import { NAVY, BLUE } from "../theme";
@@ -6,30 +7,34 @@ import { NAVY, BLUE } from "../theme";
 const SUPPORT_EMAIL = "nexrnntechnologies@gmail.com";
 
 export default function NavBar({
-  view, setView, notifOpen, setNotifOpen, profileOpen, setProfileOpen,
-  notifications, unreadCount, onOpenNotifications, onNotificationClick, onSignOut,
+  notifOpen, setNotifOpen, profileOpen, setProfileOpen,
+  notifications, unreadCount, onOpenNotifications, onNotificationClick, onSignOut, userLabel,
 }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [supportToast, setSupportToast] = useState(false);
+
   const navItems = [
-    { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { key: "courses", label: "Courses", icon: BookOpen },
-    { key: "community", label: "Community", icon: Users },
+    { to: "/my-courses", label: "Dashboard", icon: LayoutDashboard, match: (p) => p === "/my-courses" },
+    { to: "/courses", label: "Courses", icon: BookOpen, match: (p) => p.startsWith("/courses") },
+    { to: "/community", label: "Community", icon: Users, match: (p) => p.startsWith("/community") },
   ];
 
   return (
     <header className="sticky top-0 z-30 bg-white border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <button onClick={() => setView("dashboard")} className="shrink-0">
+        <Link to="/my-courses" className="shrink-0">
           <Logo />
-        </button>
+        </Link>
 
         <nav className="hidden md:flex items-center gap-1">
           {navItems.map((n) => {
             const Icon = n.icon;
-            const active = view === n.key || (n.key === "courses" && view === "player");
+            const active = n.match(location.pathname);
             return (
-              <button
-                key={n.key}
-                onClick={() => setView(n.key)}
+              <Link
+                key={n.to}
+                to={n.to}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-semibold transition ${
                   active ? "text-white" : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                 }`}
@@ -37,7 +42,7 @@ export default function NavBar({
               >
                 <Icon size={15} />
                 {n.label}
-              </button>
+              </Link>
             );
           })}
         </nav>
@@ -98,26 +103,35 @@ export default function NavBar({
               <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-slate-500">
                 <User size={14} />
               </div>
-              <span className="text-sm font-semibold text-slate-700 hidden sm:inline">Abhiraj S</span>
+              <span className="text-sm font-semibold text-slate-700 hidden sm:inline">{userLabel || "Account"}</span>
               <ChevronDown size={14} className="text-slate-500" />
             </button>
             {profileOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden">
                 <button
-                  onClick={() => { setView("dashboard"); setProfileOpen(false); }}
+                  onClick={() => { navigate("/my-courses"); setProfileOpen(false); }}
                   className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
                 >
                   <LayoutDashboard size={14} /> My Dashboard
                 </button>
                 <button
-                  onClick={() => { setView("profile"); setProfileOpen(false); }}
+                  onClick={() => { navigate("/my-account"); setProfileOpen(false); }}
                   className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
                 >
                   <User size={14} /> My Account
                 </button>
                 <a
                   href={`mailto:${SUPPORT_EMAIL}`}
-                  onClick={() => setProfileOpen(false)}
+                  onClick={(e) => {
+                    setProfileOpen(false);
+                    // Some browsers/OSes have no mail client registered, so the
+                    // mailto link silently does nothing. Also copy the address
+                    // to the clipboard as a reliable fallback.
+                    navigator.clipboard?.writeText(SUPPORT_EMAIL).then(() => {
+                      setSupportToast(true);
+                      setTimeout(() => setSupportToast(false), 2500);
+                    });
+                  }}
                   className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
                 >
                   <LifeBuoy size={14} /> Support <ExternalLink size={11} className="ml-auto text-slate-400" />
@@ -133,6 +147,11 @@ export default function NavBar({
           </div>
         </div>
       </div>
+      {supportToast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-sm font-semibold px-4 py-2.5 rounded-lg shadow-xl">
+          Email copied: {SUPPORT_EMAIL}
+        </div>
+      )}
     </header>
   );
 }

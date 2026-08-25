@@ -1,45 +1,76 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate, useParams, useSearchParams, useOutletContext } from "react-router-dom";
 import {
   ChevronLeft, ArrowRight, CheckCircle2, Circle, Video, FileText,
   Play, ChevronRight,
 } from "lucide-react";
 import { NAVY, NAVY_SOFT, BLUE } from "../theme";
 import { CURRICULUM_BY_COURSE, MODULES } from "../data/mockData";
+import { fetchCourseCurriculumWithProgress, markLessonDone } from "../services/courses.js";
+import { useAuth } from "../context/AuthContext.jsx";
 
-export default function CoursePlayerView({ course, setView, initialLessonId }) {
-  const courseModules = CURRICULUM_BY_COURSE[course?.id] || MODULES;
-  const [modules, setModules] = useState(courseModules);
-  const [activeLesson, setActiveLesson] = useState(
-    courseModules.flatMap((m) => m.lessons).find((l) => l.id === initialLessonId) || courseModules[0].lessons[0]
-  );
-  const [openModules, setOpenModules] = useState({ [courseModules[0].id]: true });
+export default function CoursePlayerView() {
+  const { courseId } = useParams();
+  const [searchParams] = useSearchParams();
+  const initialLessonId = searchParams.get("lesson");
+  const navigate = useNavigate();
+  const { myCourses, reloadMyCourses } = useOutletContext();
+  const { user, isSupabaseConfigured } = useAuth();
+
+  // Only an enrolled student's course list contains this course — this is
+  // the access gate. Anyone else gets bounced to the course detail page.
+  const course = myCourses.find((c) => c.id === courseId);
+
+  const [modules, setModules] = useState(CURRICULUM_BY_COURSE[courseId] || MODULES);
+  const [activeLesson, setActiveLesson] = useState(null);
+  const [openModules, setOpenModules] = useState({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const next = CURRICULUM_BY_COURSE[course?.id] || MODULES;
-    setModules(next);
-    const target = next.flatMap((m) => m.lessons).find((l) => l.id === initialLessonId) || next[0].lessons[0];
-    setActiveLesson(target);
-    const parent = next.find((m) => m.lessons.some((l) => l.id === target.id));
-    setOpenModules({ [parent?.id || next[0].id]: true });
+    if (!course) {
+      navigate(`/courses/${courseId}`, { replace: true });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [course?.id, initialLessonId]);
+  }, [course, courseId]);
+
+  useEffect(() => {
+    if (!course) return;
+    setLoading(true);
+    fetchCourseCurriculumWithProgress(courseId, user?.id).then((next) => {
+      setModules(next);
+      const target = next.flatMap((m) => m.lessons).find((l) => l.id === initialLessonId) || next[0]?.lessons[0];
+      setActiveLesson(target);
+      const parent = next.find((m) => m.lessons.some((l) => l.id === target?.id));
+      setOpenModules({ [parent?.id || next[0]?.id]: true });
+      setLoading(false);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseId, course?.id]);
+
+  if (!course || loading || !activeLesson) return null;
 
   const toggleModule = (id) => setOpenModules((p) => ({ ...p, [id]: !p[id] }));
 
   const flatLessons = modules.flatMap((m) => m.lessons);
   const totalLessons = flatLessons.length;
   const doneLessons = flatLessons.filter((l) => l.done).length;
-  const pct = Math.round((doneLessons / totalLessons) * 100);
+  const pct = totalLessons ? Math.round((doneLessons / totalLessons) * 100) : 0;
 
   const goToLesson = (lesson) => setActiveLesson(lesson);
 
-  const markCompleteAndContinue = () => {
+  const markCompleteAndContinue = async () => {
     setModules((prev) =>
       prev.map((m) => ({
         ...m,
         lessons: m.lessons.map((l) => (l.id === activeLesson.id ? { ...l, done: true } : l)),
       }))
     );
+
+    if (isSupabaseConfigured && user) {
+      await markLessonDone(user.id, activeLesson.id);
+      reloadMyCourses();
+    }
+
     const idx = flatLessons.findIndex((l) => l.id === activeLesson.id);
     const next = flatLessons[idx + 1];
     if (next) {
@@ -56,14 +87,14 @@ export default function CoursePlayerView({ course, setView, initialLessonId }) {
       {/* Sidebar */}
       <aside className="w-full md:w-80 border-r border-slate-200 bg-white overflow-y-auto shrink-0">
         <button
-          onClick={() => setView("dashboard")}
+          onClick={() => navigate("/my-courses")}
           className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 px-5 pt-5"
         >
           <ChevronLeft size={15} /> Go to Dashboard
         </button>
 
         <div className="px-5 pt-4">
-          <h2 className="font-extrabold text-slate-900 leading-snug">{course?.title || "Digital Marketing"}</h2>
+          <h2 className="font-extrabold text-slate-900 leading-snug">{course?.title}</h2>
           <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mt-3 mb-1">
             <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: BLUE }} />
           </div>
@@ -76,7 +107,7 @@ export default function CoursePlayerView({ course, setView, initialLessonId }) {
               Join the conversation in the Nexrnn {course?.title || "Course"} — Community.
             </p>
             <button
-              onClick={() => setView("community")}
+              onClick={() => navigate("/community")}
               className="w-full text-xs font-bold text-white border border-white/20 rounded-md py-2 flex items-center justify-center gap-1 hover:bg-white/10"
             >
               GO TO COMMUNITY <ArrowRight size={12} />
@@ -138,17 +169,29 @@ export default function CoursePlayerView({ course, setView, initialLessonId }) {
         </div>
 
         <div className="px-8 py-8 max-w-3xl">
-          <div
-            className="aspect-video rounded-xl flex items-center justify-center mb-6"
-            style={{ backgroundColor: NAVY }}
-          >
-            <button
-              className="w-16 h-16 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: BLUE }}
+          {activeLesson.videoUrl ? (
+            <div className="aspect-video rounded-xl overflow-hidden mb-6 bg-black">
+              <iframe
+                src={activeLesson.videoUrl}
+                title={activeLesson.title}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          ) : (
+            <div
+              className="aspect-video rounded-xl flex items-center justify-center mb-6"
+              style={{ backgroundColor: NAVY }}
             >
-              <Play size={26} className="text-white fill-white ml-1" />
-            </button>
-          </div>
+              <button
+                className="w-16 h-16 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: BLUE }}
+              >
+                <Play size={26} className="text-white fill-white ml-1" />
+              </button>
+            </div>
+          )}
 
           <p className="text-sm text-slate-600 mb-2">
             Please watch this lesson fully before moving to the next one.
@@ -156,7 +199,7 @@ export default function CoursePlayerView({ course, setView, initialLessonId }) {
           <div className="flex flex-wrap gap-4 text-sm mb-8">
             <button className="font-semibold hover:underline" style={{ color: BLUE }}>Join WhatsApp Group</button>
             <button className="font-semibold hover:underline" style={{ color: BLUE }}>Join Telegram Group</button>
-            <button onClick={() => setView("community")} className="font-semibold hover:underline" style={{ color: BLUE }}>
+            <button onClick={() => navigate("/community")} className="font-semibold hover:underline" style={{ color: BLUE }}>
               Doubts / Queries Forum
             </button>
           </div>

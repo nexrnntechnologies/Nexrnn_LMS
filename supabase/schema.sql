@@ -21,6 +21,7 @@ create table if not exists profiles (
   city text,
   phone text,
   avatar_url text,
+  role text default 'student' check (role in ('student', 'admin')),
   created_at timestamptz default now()
 );
 
@@ -28,6 +29,10 @@ alter table profiles enable row level security;
 
 create policy "Users can view their own profile"
   on profiles for select using (auth.uid() = id);
+create policy "Admins can view all profiles"
+  on profiles for select using (
+    exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin')
+  );
 create policy "Users can update their own profile"
   on profiles for update using (auth.uid() = id);
 create policy "Users can insert their own profile"
@@ -77,6 +82,10 @@ create table if not exists courses (
 alter table courses enable row level security;
 create policy "Courses are publicly readable"
   on courses for select using (true);
+create policy "Admins can manage courses"
+  on courses for all using (
+    exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+  );
 
 -- ---------------------------------------------------------
 -- MODULES  (grouped lessons within a course)
@@ -91,6 +100,10 @@ create table if not exists modules (
 alter table modules enable row level security;
 create policy "Modules are publicly readable"
   on modules for select using (true);
+create policy "Admins can manage modules"
+  on modules for all using (
+    exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+  );
 
 -- ---------------------------------------------------------
 -- LESSONS
@@ -109,6 +122,10 @@ create table if not exists lessons (
 alter table lessons enable row level security;
 create policy "Lessons are publicly readable"
   on lessons for select using (true);
+create policy "Admins can manage lessons"
+  on lessons for all using (
+    exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+  );
 
 -- ---------------------------------------------------------
 -- ENROLLMENTS  (which user is enrolled in which course)
@@ -260,3 +277,8 @@ insert into lessons (id, module_id, title, type, duration, position, free_previe
 ('digital-marketing-m3-l2', 'digital-marketing-m3', 'Facebook & Instagram Ads', 'video', '24 MIN', 2, false),
 ('digital-marketing-m3-l3', 'digital-marketing-m3', 'Download your E-Certificate', 'text', null, 3, false)
 on conflict (id) do nothing;
+
+-- =========================================================
+-- Making a user an admin (do this after they sign up once):
+-- =========================================================
+-- update profiles set role = 'admin' where email = 'their@email.com';

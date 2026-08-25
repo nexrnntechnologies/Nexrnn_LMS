@@ -1,8 +1,10 @@
 import React, { useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import { Search } from "lucide-react";
 import CourseCard from "../components/CourseCard.jsx";
 
-export default function CoursesView({ courses, onView, onViewDetail, onEnroll, enrolledIds }) {
+export default function CoursesView() {
+  const { courses, enrollCourse, enrolledIds } = useOutletContext();
   const [query, setQuery] = useState("");
   const filtered = courses.filter(
     (c) =>
@@ -30,14 +32,7 @@ export default function CoursesView({ courses, onView, onViewDetail, onEnroll, e
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {filtered.map((c) => (
-            <CourseCard
-              key={c.id}
-              course={c}
-              onView={onView}
-              onViewDetail={onViewDetail}
-              onEnroll={onEnroll}
-              enrolled={enrolledIds.includes(c.id)}
-            />
+            <CourseCard key={c.id} course={c} onEnroll={enrollCourse} enrolled={enrolledIds.includes(c.id)} />
           ))}
         </div>
       )}

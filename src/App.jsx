@@ -1,149 +1,64 @@
-import React, { useState, useEffect } from "react";
-import NavBar from "./components/NavBar.jsx";
+import React from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import AppLayout from "./layouts/AppLayout.jsx";
 import DashboardView from "./pages/DashboardView.jsx";
 import CoursesView from "./pages/CoursesView.jsx";
 import CourseDetailView from "./pages/CourseDetailView.jsx";
 import CoursePlayerView from "./pages/CoursePlayerView.jsx";
 import ProfileView from "./pages/ProfileView.jsx";
 import CommunityView from "./pages/CommunityView.jsx";
-import AuthView from "./pages/AuthView.jsx";
-import RateCourseModal from "./components/RateCourseModal.jsx";
-import { useAuth } from "./context/AuthContext.jsx";
-import { fetchCourses } from "./services/courses.js";
-import { CURRICULUM_BY_COURSE, INITIAL_MY_COURSES, INITIAL_NOTIFICATIONS } from "./data/mockData";
+import LoginView from "./pages/LoginView.jsx";
+import CreateAccountView from "./pages/CreateAccountView.jsx";
+import NotFoundView from "./pages/NotFoundView.jsx";
+import AdminLogin from "./admin/pages/AdminLogin.jsx";
+import AdminLayout from "./admin/components/AdminLayout.jsx";
+import AdminDashboard from "./admin/pages/AdminDashboard.jsx";
+import AdminCourses from "./admin/pages/AdminCourses.jsx";
+import AdminCourseContent from "./admin/pages/AdminCourseContent.jsx";
+import AdminUsers from "./admin/pages/AdminUsers.jsx";
+import AdminUserDetail from "./admin/pages/AdminUserDetail.jsx";
+import AdminCommunities from "./admin/pages/AdminCommunities.jsx";
+import AdminNotifications from "./admin/pages/AdminNotifications.jsx";
+
+const ADMIN_BASE = "/nexrnn/master_nexrnn/admin";
 
 export default function App() {
-  const { user, loading, signOut, isSupabaseConfigured } = useAuth();
-
-  const [courses, setCourses] = useState([]);
-  const [view, setView] = useState("dashboard");
-  const [myCourses, setMyCourses] = useState(INITIAL_MY_COURSES);
-  const [activeCourse, setActiveCourse] = useState(INITIAL_MY_COURSES[0]);
-  const [activeLessonId, setActiveLessonId] = useState(null);
-  const [notifOpen, setNotifOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
-  const [ratingCourse, setRatingCourse] = useState(null);
-
-  useEffect(() => {
-    fetchCourses().then(setCourses);
-  }, []);
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
-  const enrolledIds = myCourses.map((c) => c.id);
-
-  const openCourse = (course) => {
-    setActiveCourse(course);
-    setActiveLessonId(null);
-    setView("player");
-  };
-
-  const openCourseDetail = (course) => {
-    setActiveCourse(course);
-    setView("course-detail");
-  };
-
-  const startLesson = (course, lesson) => {
-    setActiveCourse(course);
-    setActiveLessonId(lesson.id);
-    setView("player");
-  };
-
-  const enrollCourse = (course) => {
-    setMyCourses((prev) =>
-      prev.some((c) => c.id === course.id) ? prev : [...prev, { ...course, progress: 0 }]
-    );
-    setActiveCourse(course);
-    setActiveLessonId(null);
-    setView("player");
-  };
-
-  const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
-
-  const handleNotificationClick = (n) => {
-    setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
-    setNotifOpen(false);
-    setView("community");
-  };
-
-  const handleRateSubmit = ({ stars, comment }) => {
-    // Persisted via Supabase in src/services/courses.js -> submitRating()
-    // once a project is connected; kept local here so the UI still works
-    // in demo mode with no backend configured.
-    console.log("Rating submitted", { course: ratingCourse?.id, stars, comment });
-  };
-
-  // While Supabase is configured but session hasn't resolved yet
-  if (isSupabaseConfigured && loading) {
-    return <div className="min-h-screen flex items-center justify-center text-slate-400 text-sm">Loading…</div>;
-  }
-
-  // Require sign-in only once a real Supabase project is connected.
-  // In demo mode (no .env set up yet) the app skips straight to the UI.
-  if (isSupabaseConfigured && !user) {
-    return <AuthView />;
-  }
-
-  const curriculum = CURRICULUM_BY_COURSE[activeCourse?.id] || [];
-
   return (
-    <div
-      className="min-h-screen bg-slate-50 font-sans"
-      onClick={() => { setNotifOpen(false); setProfileOpen(false); }}
-    >
-      <NavBar
-        view={view}
-        setView={setView}
-        notifOpen={notifOpen}
-        setNotifOpen={setNotifOpen}
-        profileOpen={profileOpen}
-        setProfileOpen={setProfileOpen}
-        notifications={notifications}
-        unreadCount={unreadCount}
-        onOpenNotifications={markAllRead}
-        onNotificationClick={handleNotificationClick}
-        onSignOut={signOut}
-      />
+    <Routes>
+      {/* Public LMS (student-facing) */}
+      <Route element={<AppLayout />}>
+        <Route path="/my-courses" element={<DashboardView />} />
+        <Route path="/my-courses/certificates" element={<ProfileView />} />
+        <Route path="/my-courses/:courseId" element={<CoursePlayerView />} />
+        <Route path="/courses" element={<CoursesView />} />
+        <Route path="/courses/:courseId" element={<CourseDetailView />} />
+        <Route path="/my-account" element={<ProfileView />} />
+        <Route path="/my-account/password" element={<ProfileView />} />
+        <Route path="/my-account/notifications" element={<ProfileView />} />
+        <Route path="/my-account/billing" element={<ProfileView />} />
+        <Route path="/my-account/orders" element={<ProfileView />} />
+        <Route path="/community" element={<CommunityView />} />
+      </Route>
 
-      {view === "dashboard" && (
-        <DashboardView openCourse={openCourse} myCourses={myCourses} onRate={setRatingCourse} />
-      )}
-      {view === "courses" && (
-        <CoursesView
-          courses={courses}
-          onView={openCourse}
-          onViewDetail={openCourseDetail}
-          onEnroll={enrollCourse}
-          enrolledIds={enrolledIds}
-        />
-      )}
-      {view === "course-detail" && (
-        <CourseDetailView
-          course={activeCourse}
-          curriculum={curriculum}
-          enrolled={enrolledIds.includes(activeCourse?.id)}
-          onBack={() => setView("courses")}
-          onEnroll={enrollCourse}
-          onStartLesson={startLesson}
-        />
-      )}
-      {view === "player" && (
-        <CoursePlayerView course={activeCourse} setView={setView} initialLessonId={activeLessonId} />
-      )}
-      {view === "profile" && (
-        <ProfileView notifications={notifications} enrolledCourses={myCourses} />
-      )}
-      {view === "community" && <CommunityView />}
+      {/* Auth */}
+      <Route path="/login" element={<LoginView />} />
+      <Route path="/createaccount" element={<CreateAccountView />} />
 
-      {ratingCourse && (
-        <RateCourseModal
-          course={ratingCourse}
-          onSubmit={handleRateSubmit}
-          onClose={() => setRatingCourse(null)}
-        />
-      )}
-    </div>
+      {/* Admin panel */}
+      <Route path={`${ADMIN_BASE}/login`} element={<AdminLogin />} />
+      <Route path={ADMIN_BASE} element={<AdminLayout />}>
+        <Route index element={<AdminDashboard />} />
+        <Route path="courses" element={<AdminCourses />} />
+        <Route path="courses/:courseId/content" element={<AdminCourseContent />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="users/:userId" element={<AdminUserDetail />} />
+        <Route path="communities" element={<AdminCommunities />} />
+        <Route path="notifications" element={<AdminNotifications />} />
+      </Route>
+
+      {/* Fallbacks */}
+      <Route path="/" element={<Navigate to="/my-courses" replace />} />
+      <Route path="*" element={<NotFoundView />} />
+    </Routes>
   );
 }
