@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft, Save, Trash2 } from "lucide-react";
 import { adminDeleteUser, adminFetchUserDetail, adminUpdateUserProfile } from "../../services/admin.js";
 import { BLUE } from "../../theme";
+import AdminExportButtons from "../../components/AdminExportButtons.jsx";
 
 const EMPTY_FORM = { first_name: "", last_name: "", email: "", phone: "", city: "", gender: "", role: "student" };
 const inputClass = "w-full px-3 py-2.5 text-sm rounded-md border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400";
@@ -31,6 +32,20 @@ export default function AdminUserDetail() {
   };
 
   useEffect(() => { loadUser(); }, [userId]);
+
+  const enrollmentExportRows = useMemo(() => enrollments.map((enrollment) => ({
+    item: enrollment.courseTitle,
+    type: enrollment.courseType === "workshop" ? "Workshop" : "Course",
+    status: enrollment.status || "free",
+    progress: `${enrollment.pct}%`,
+    lessons: `${enrollment.doneLessons}/${enrollment.totalLessons}`,
+    payment: enrollment.payment_ref || "",
+  })), [enrollments]);
+  const certificateExportRows = useMemo(() => certificates.map((certificate) => ({
+    item: certificate.course_title,
+    certificateId: certificate.certificate_id || certificate.registration_id,
+    issued: certificate.issued_at ? new Date(certificate.issued_at).toLocaleString("en-IN") : "",
+  })), [certificates]);
 
   const setField = (field) => (event) => setForm((current) => ({ ...current, [field]: event.target.value }));
 
@@ -94,10 +109,10 @@ export default function AdminUserDetail() {
       </div>
       <p className="text-xs text-slate-400 -mt-5 mb-8">User ID cannot be edited by the admin panel or changed in the database after it is issued.</p>
 
-      <h2 className="font-extrabold text-slate-900 mb-4">Enrollments &amp; Progress</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4"><h2 className="font-extrabold text-slate-900">Enrollments &amp; Progress</h2><AdminExportButtons title={`${userId}-enrollments-progress`} rows={enrollmentExportRows} columns={[{ label: "Item", key: "item" }, { label: "Type", key: "type" }, { label: "Status", key: "status" }, { label: "Progress", key: "progress" }, { label: "Lessons", key: "lessons" }, { label: "Payment", key: "payment" }]} /></div>
       {enrollments.length === 0 ? <p className="text-sm text-slate-400">Not enrolled in any courses yet.</p> : <div className="border border-slate-200 rounded-lg overflow-hidden bg-white divide-y divide-slate-100">{enrollments.map((enrollment) => <div key={enrollment.id} className="p-4"><div className="flex items-center justify-between mb-2"><p className="font-semibold text-slate-800 text-sm">{enrollment.courseTitle}</p><span className={`text-[11px] font-bold px-2 py-0.5 rounded ${enrollment.status === "paid" ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>{enrollment.status || "free"}</span></div><div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mb-1"><div className="h-full rounded-full" style={{ width: `${enrollment.pct}%`, backgroundColor: BLUE }} /></div><p className="text-[12px] text-slate-500">{enrollment.pct}% complete — {enrollment.doneLessons}/{enrollment.totalLessons} lessons{enrollment.payment_ref && <> · Payment ref: {enrollment.payment_ref}</>}</p></div>)}</div>}
 
-      {certificates.length > 0 && <div className="mt-8"><h2 className="font-extrabold text-slate-900 mb-4">Issued certificates</h2><div className="border border-slate-200 rounded-lg overflow-hidden bg-white divide-y divide-slate-100">{certificates.map((certificate) => <div key={certificate.id} className="p-4 flex flex-wrap items-center justify-between gap-3"><div><p className="font-semibold text-slate-800 text-sm">{certificate.course_title}</p><p className="text-[12px] text-slate-500">Issued {certificate.issued_at ? new Date(certificate.issued_at).toLocaleDateString() : "—"}</p></div><div className="text-right"><p className="text-xs font-bold text-green-700">{certificate.certificate_id || certificate.registration_id}</p><p className="text-[10px] text-slate-400 mt-1">Certificate ID — read only</p></div></div>)}</div></div>}
+      {certificates.length > 0 && <div className="mt-8"><div className="flex flex-wrap items-center justify-between gap-3 mb-4"><h2 className="font-extrabold text-slate-900">Issued certificates</h2><AdminExportButtons title={`${userId}-certificates`} rows={certificateExportRows} columns={[{ label: "Item", key: "item" }, { label: "Certificate ID", key: "certificateId" }, { label: "Issued", key: "issued" }]} /></div><div className="border border-slate-200 rounded-lg overflow-hidden bg-white divide-y divide-slate-100">{certificates.map((certificate) => <div key={certificate.id} className="p-4 flex flex-wrap items-center justify-between gap-3"><div><p className="font-semibold text-slate-800 text-sm">{certificate.course_title}</p><p className="text-[12px] text-slate-500">Issued {certificate.issued_at ? new Date(certificate.issued_at).toLocaleDateString() : "—"}</p></div><div className="text-right"><p className="text-xs font-bold text-green-700">{certificate.certificate_id || certificate.registration_id}</p><p className="text-[10px] text-slate-400 mt-1">Certificate ID — read only</p></div></div>)}</div></div>}
     </div>
   );
 }

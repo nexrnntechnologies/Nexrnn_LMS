@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ChevronLeft, Plus, Trash2, Pencil, Video, FileText, FileUp, Check, X, ExternalLink } from "lucide-react";
 import {
@@ -6,6 +6,7 @@ import {
   adminCreateLesson, adminUpdateLesson, adminDeleteLesson, adminReplaceLessonResources,
 } from "../../services/admin.js";
 import { BLUE } from "../../theme";
+import AdminExportButtons from "../../components/AdminExportButtons.jsx";
 
 const EMPTY_LESSON = { title: "", type: "video", duration: "", videoUrl: "", pdfUrl: "", pdfFile: null, content: "", resources: [], freePreview: false };
 
@@ -50,6 +51,11 @@ export default function AdminCourseContent({ catalogType = "course" }) {
   };
 
   useEffect(() => { load(); }, [courseId]);
+
+  const exportRows = useMemo(() => modules.flatMap((module) => {
+    const lessons = module.lessons || [];
+    return lessons.length ? lessons.map((lesson) => ({ module: module.title, lesson: lesson.title, type: lesson.type, duration: lesson.duration, freePreview: lesson.free_preview ? "Yes" : "No", video: lesson.video_url || "", pdf: lesson.pdf_url || "", resources: (lesson.lesson_resources || []).length })) : [{ module: module.title, lesson: "", type: "", duration: "", freePreview: "", video: "", pdf: "", resources: 0 }];
+  }), [modules]);
 
   const handleAddModule = async (event) => {
     event.preventDefault();
@@ -124,8 +130,8 @@ export default function AdminCourseContent({ catalogType = "course" }) {
   return (
     <div className="max-w-5xl mx-auto px-8 py-10">
       <Link to={`/nexrnn/master_nexrnn/admin/${catalogBase}`} className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 mb-4"><ChevronLeft size={15} /> Back to {itemLabel}s</Link>
-      <h1 className="text-2xl font-extrabold text-slate-900 mb-1">{itemLabel} Content</h1>
-      <p className="text-sm text-slate-500 mb-6">{courseId}</p>
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-1"><div><h1 className="text-2xl font-extrabold text-slate-900">{itemLabel} Content</h1><p className="text-sm text-slate-500 mt-1">{courseId}</p></div><AdminExportButtons title={`${courseId}-content`} rows={exportRows} columns={[{ label: "Module", key: "module" }, { label: "Lesson", key: "lesson" }, { label: "Type", key: "type" }, { label: "Duration", key: "duration" }, { label: "Free Preview", key: "freePreview" }, { label: "Video URL", key: "video" }, { label: "PDF URL", key: "pdf" }, { label: "Resource Links", key: "resources" }]} /></div>
+      <div className="mb-6" />
 
       <form onSubmit={handleAddModule} className="bg-white border border-slate-200 rounded-lg p-4 flex flex-col sm:flex-row gap-3 mb-6">
         <input value={newModuleTitle} onChange={(event) => setNewModuleTitle(event.target.value)} placeholder="New module title" className={`${inputClass} flex-1`} />

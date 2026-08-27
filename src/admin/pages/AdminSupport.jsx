@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { ExternalLink, MessageSquare, RefreshCw, Send } from "lucide-react";
 import { adminFetchSupportRequests, adminUpdateSupportRequest } from "../../services/admin.js";
 import { BLUE } from "../../theme";
+import AdminExportButtons from "../../components/AdminExportButtons.jsx";
 
 const STATUS_STYLES = { open: "bg-red-100 text-red-700", in_progress: "bg-amber-100 text-amber-700", resolved: "bg-green-100 text-green-700" };
 
@@ -58,9 +59,9 @@ export default function AdminSupport() {
 
   return (
     <div className="max-w-7xl mx-auto px-8 py-10">
-      <div className="flex items-center justify-between gap-4 mb-6">
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div><p className="text-xs font-bold tracking-[0.2em] text-slate-400 uppercase mb-2">Student care</p><h1 className="text-2xl font-extrabold text-slate-900">Support Requests</h1><p className="text-sm text-slate-500 mt-1">Review issues and send feedback from the admin panel.</p></div>
-        <button onClick={load} className="flex items-center gap-2 text-sm font-semibold text-slate-600 border border-slate-200 px-3 py-2 rounded-md hover:bg-white"><RefreshCw size={14} /> Refresh</button>
+        <div className="flex flex-wrap items-center gap-3"><AdminExportButtons title="support-requests" rows={filteredRequests} columns={[{ label: "Date", value: (item) => item.created_at ? new Date(item.created_at).toLocaleString("en-IN") : "" }, { label: "Name", key: "name" }, { label: "Email", key: "email" }, { label: "Mobile", key: "mobile" }, { label: "Reason", key: "reason" }, { label: "Message", key: "message" }, { label: "Status", value: (item) => item.status || "open" }, { label: "Admin Feedback", key: "admin_feedback" }]} /><button onClick={load} className="flex items-center gap-2 text-sm font-semibold text-slate-600 border border-slate-200 px-3 py-2 rounded-md hover:bg-white"><RefreshCw size={14} /> Refresh</button></div>
       </div>
 
       <div className="bg-white border border-slate-200 rounded-lg p-3 mb-5 grid grid-cols-1 md:grid-cols-[minmax(220px,1fr)_150px_150px_150px] gap-3 items-end">

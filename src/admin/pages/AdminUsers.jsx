@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { adminFetchUsers } from "../../services/admin.js";
 import { BLUE } from "../../theme";
+import AdminExportButtons from "../../components/AdminExportButtons.jsx";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -30,7 +31,7 @@ export default function AdminUsers() {
 
   return (
     <div className="max-w-6xl mx-auto px-8 py-10">
-      <div className="flex items-center justify-between gap-4 mb-6"><div><p className="text-xs font-bold tracking-[0.2em] text-slate-400 uppercase mb-2">Accounts</p><h1 className="text-2xl font-extrabold text-slate-900">Registered Users</h1><p className="text-sm text-slate-500 mt-1">All registered users, including students and admins.</p></div><span className="text-sm font-semibold text-slate-500">{filteredUsers.length} shown</span></div>
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6"><div><p className="text-xs font-bold tracking-[0.2em] text-slate-400 uppercase mb-2">Accounts</p><h1 className="text-2xl font-extrabold text-slate-900">Registered Users</h1><p className="text-sm text-slate-500 mt-1">All registered users, including students and admins.</p></div><div className="flex flex-wrap items-center gap-3"><span className="text-sm font-semibold text-slate-500">{filteredUsers.length} shown</span><AdminExportButtons title="registered-users" rows={filteredUsers} columns={[{ label: "Name", value: (user) => [user.first_name, user.last_name].filter(Boolean).join(" ") }, { label: "User ID", key: "user_registration_id" }, { label: "Email", key: "email" }, { label: "Phone", key: "phone" }, { label: "City", key: "city" }, { label: "Role", key: "role" }, { label: "Joined", value: (user) => user.created_at ? new Date(user.created_at).toLocaleString("en-IN") : "" }]} /></div></div>
 
       <div className="bg-white border border-slate-200 rounded-lg p-3 mb-5 grid grid-cols-1 md:grid-cols-[minmax(220px,1fr)_190px] gap-3 items-end"><label className="relative block"><span className="sr-only">Search users</span><Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, email, phone…" className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400" /></label><label className="block"><span className="text-[10px] font-bold tracking-wide text-slate-400 uppercase block mb-1">Role</span><div className="relative"><SlidersHorizontal size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 rounded-md bg-white"><option value="all">All roles</option><option value="student">Student</option><option value="admin">Admin</option></select></div></label></div>
       {error && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2 mb-4">{error}</p>}

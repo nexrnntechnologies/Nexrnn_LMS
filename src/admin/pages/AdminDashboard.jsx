@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { BookOpen, Users, GraduationCap, Eye } from "lucide-react";
 import { adminFetchCourses, adminFetchUsers, adminFetchEnrollmentCounts, adminFetchVisitStats } from "../../services/admin.js";
 import { BLUE } from "../../theme";
+import AdminExportButtons from "../../components/AdminExportButtons.jsx";
 
 function StatCard({ icon: Icon, label, value }) {
   return (
@@ -34,7 +35,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="max-w-5xl mx-auto px-8 py-10">
-      <h1 className="text-2xl font-extrabold text-slate-900 mb-8">Overview</h1>
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-8"><h1 className="text-2xl font-extrabold text-slate-900">Overview</h1><AdminExportButtons title="dashboard-overview" rows={[stats]} columns={[{ label: "Courses", key: "courses" }, { label: "Registered Users", key: "users" }, { label: "Total Enrollments", key: "enrollments" }, { label: "Website Visits", key: "visits" }, { label: "Unique Visitors", key: "visitors" }]} /></div>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-5">
         <StatCard icon={BookOpen} label="Courses" value={stats.courses} />
         <StatCard icon={Users} label="Registered Users" value={stats.users} />
