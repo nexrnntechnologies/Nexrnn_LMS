@@ -6,6 +6,9 @@ import { NAVY, BLUE } from "../theme";
 export default function CourseCard({ course, onEnroll, enrolled }) {
   const navigate = useNavigate();
   const Icon = course.icon;
+  const catalogPath = course.courseType === "workshop" ? "/workshops" : "/courses";
+  const playerPath = course.courseType === "workshop" ? "/my-workshops" : "/my-courses";
+  const itemLabel = course.courseType === "workshop" ? "Workshop" : "Course";
   return (
     <div className="rounded-xl overflow-hidden border border-slate-200 bg-white shadow-sm hover:shadow-md transition flex flex-col h-full">
       <div className="p-5" style={{ backgroundColor: NAVY }}>
@@ -49,17 +52,17 @@ export default function CourseCard({ course, onEnroll, enrolled }) {
 
         <div className="flex gap-2 pt-2 mt-auto">
           <button
-            onClick={() => navigate(`/courses/${course.id}`)}
+            onClick={() => navigate(`${catalogPath}/${course.id}`)}
             className="flex-1 text-sm font-semibold border border-slate-300 rounded-md py-2 hover:bg-slate-50"
           >
-            View Course
+            View {itemLabel}
           </button>
           <button
-            onClick={() => (enrolled ? navigate(`/my-courses/${course.id}`) : onEnroll(course))}
+            onClick={() => (enrolled ? navigate(`${playerPath}/${course.id}`) : onEnroll(course))}
             className="flex-1 text-sm font-semibold text-white rounded-md py-2 flex items-center justify-center gap-1 hover:opacity-90"
             style={{ backgroundColor: enrolled ? "#16A34A" : BLUE }}
           >
-            {enrolled ? "Go to Course" : "Enroll Now"} <ArrowRight size={14} />
+            {enrolled ? `Go to ${itemLabel}` : "Enroll Now"} <ArrowRight size={14} />
           </button>
         </div>
       </div>

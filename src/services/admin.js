@@ -2,9 +2,15 @@ import { supabase, isSupabaseConfigured } from "../lib/supabaseClient";
 
 const notConfigured = () => ({ message: "Supabase not configured yet. Add your VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY first." });
 
-export async function adminFetchCourses() {
+export async function adminFetchCourses(courseType = null) {
   if (!isSupabaseConfigured) return { data: [], error: notConfigured() };
-  const { data, error } = await supabase.from("courses").select("*").order("created_at", { ascending: false });
+  let query = supabase.from("courses").select("*").order("created_at", { ascending: false });
+  if (courseType) query = query.eq("course_type", courseType);
+  const { data, error } = await query;
+  if (error && courseType) {
+    const { data: legacyData, error: legacyError } = await supabase.from("courses").select("*").order("created_at", { ascending: false });
+    if (!legacyError) return { data: (legacyData || []).filter((course) => (course.course_type || "course") === courseType), error: null };
+  }
   return { data: data || [], error };
 }
 
@@ -65,31 +71,37 @@ export async function adminFetchVisitStats() {
   };
 }
 
-export async function adminFetchCourseEnrollments() {
+export async function adminFetchCourseEnrollments(courseType = null) {
   if (!isSupabaseConfigured) return { data: [], error: notConfigured() };
   const { data: enrollments, error } = await supabase.from("enrollments").select("*").order("enrolled_at", { ascending: false });
   if (error) return { data: [], error };
   const rows = enrollments || [];
   const userIds = [...new Set(rows.map((row) => row.user_id).filter(Boolean))];
   const courseIds = [...new Set(rows.map((row) => row.course_id).filter(Boolean))];
-  const [{ data: profiles }, { data: courses }, { data: certificates }] = await Promise.all([
+  const [profilesResult, coursesResult, certificatesResult] = await Promise.all([
     userIds.length ? supabase.from("profiles").select("id, user_registration_id, email, first_name, last_name, phone").in("id", userIds) : Promise.resolve({ data: [] }),
-    courseIds.length ? supabase.from("courses").select("id, title").in("id", courseIds) : Promise.resolve({ data: [] }),
+    courseIds.length ? supabase.from("courses").select("id, title, course_type").in("id", courseIds) : Promise.resolve({ data: [] }),
     userIds.length && courseIds.length ? supabase.from("certificates").select("*").in("user_id", userIds).in("course_id", courseIds) : Promise.resolve({ data: [] }),
   ]);
+  const { data: profiles } = profilesResult;
+  const { data: certificates } = certificatesResult;
+  let courses = coursesResult.data || [];
+  if (coursesResult.error && courseIds.length) {
+    const legacyCourses = await supabase.from("courses").select("id, title").in("id", courseIds);
+    courses = legacyCourses.data || [];
+  }
   const profileMap = Object.fromEntries((profiles || []).map((profile) => [profile.id, profile]));
   const courseMap = Object.fromEntries((courses || []).map((course) => [course.id, course]));
   const certificateMap = Object.fromEntries((certificates || []).map((certificate) => [`${certificate.user_id}:${certificate.course_id}`, certificate]));
-  return {
-    data: rows.map((row) => ({
-      ...row,
-      profile: profileMap[row.user_id] || {},
-      courseTitle: courseMap[row.course_id]?.title || row.course_id,
-      certificate: certificateMap[`${row.user_id}:${row.course_id}`] || null,
-      certificateId: certificateMap[`${row.user_id}:${row.course_id}`]?.certificate_id || certificateMap[`${row.user_id}:${row.course_id}`]?.registration_id || null,
-    })),
-    error: null,
-  };
+  const data = rows.map((row) => ({
+    ...row,
+    profile: profileMap[row.user_id] || {},
+    courseTitle: courseMap[row.course_id]?.title || row.course_id,
+    courseType: courseMap[row.course_id]?.course_type || "course",
+    certificate: certificateMap[`${row.user_id}:${row.course_id}`] || null,
+    certificateId: certificateMap[`${row.user_id}:${row.course_id}`]?.certificate_id || certificateMap[`${row.user_id}:${row.course_id}`]?.registration_id || null,
+  }));
+  return { data: courseType ? data.filter((row) => row.courseType === courseType) : data, error: null };
 }
 
 export async function adminFetchModules(courseId) {
@@ -318,7 +330,7 @@ export async function adminFetchCertificates() {
   const courseIds = [...new Set(rows.map((row) => row.course_id).filter(Boolean))];
   const [{ data: profiles }, { data: courses }] = await Promise.all([
     userIds.length ? supabase.from("profiles").select("id, user_registration_id, first_name, last_name, email").in("id", userIds) : Promise.resolve({ data: [] }),
-    courseIds.length ? supabase.from("courses").select("id, title").in("id", courseIds) : Promise.resolve({ data: [] }),
+    courseIds.length ? supabase.from("courses").select("id, title, course_type").in("id", courseIds) : Promise.resolve({ data: [] }),
   ]);
   const profileMap = Object.fromEntries((profiles || []).map((profile) => [profile.id, profile]));
   const courseMap = Object.fromEntries((courses || []).map((course) => [course.id, course]));

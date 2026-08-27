@@ -13,6 +13,7 @@ export default function AppLayout() {
   const { user, profile, signOut, isSupabaseConfigured } = useAuth();
   const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
+  const [workshops, setWorkshops] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [myCourses, setMyCourses] = useState(isSupabaseConfigured ? [] : INITIAL_MY_COURSES);
   const [myCoursesLoading, setMyCoursesLoading] = useState(isSupabaseConfigured);
@@ -48,8 +49,9 @@ export default function AppLayout() {
   }, [user, isSupabaseConfigured]);
 
   useEffect(() => {
-    fetchCourses().then((data) => {
-      setCourses(data);
+    Promise.all([fetchCourses("course"), fetchCourses("workshop")]).then(([courseData, workshopData]) => {
+      setCourses(courseData);
+      setWorkshops(workshopData);
       setCoursesLoading(false);
     });
     fetchCourseRatings().then(setCourseRatings);
@@ -59,19 +61,22 @@ export default function AppLayout() {
     if (isSupabaseConfigured && user) {
       reloadMyCourses();
       fetchNotifications(user.id).then(setNotifications);
+    } else {
+      setMyCoursesLoading(false);
     }
   }, [user, isSupabaseConfigured, reloadMyCourses]);
 
   const unreadCount = notifications.filter((notification) => !notification.read).length;
   const enrolledIds = myCourses.map((course) => course.id);
+  const playerPathFor = (course) => `${course.courseType === "workshop" ? "/my-workshops" : "/my-courses"}/${course.id}`;
 
   const requestEnroll = (course) => {
     if (isSupabaseConfigured && !user) {
-      navigate("/login", { state: { from: `/courses/${course.id}` } });
+      navigate("/login", { state: { from: `${course.courseType === "workshop" ? "/workshops" : "/courses"}/${course.id}` } });
       return;
     }
     if (enrolledIds.includes(course.id)) {
-      navigate(`/my-courses/${course.id}`);
+      navigate(playerPathFor(course));
       return;
     }
     setEnrollError("");
@@ -130,13 +135,14 @@ export default function AppLayout() {
     }
     if (!isSupabaseConfigured || !user) {
       setCourseRatings((current) => {
-        const next = [{ id: `demo-${ratingCourse.id}`, user_id: currentUserId, course_id: ratingCourse.id, courseTitle: ratingCourse.title, stars, comment, created_at: new Date().toISOString() }, ...current];
+        const next = [{ id: `demo-${ratingCourse.id}`, user_id: currentUserId, learner_name: [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "Demo Learner", course_id: ratingCourse.id, courseTitle: ratingCourse.title, stars, comment, created_at: new Date().toISOString() }, ...current];
         try { localStorage.setItem("nexrnn_demo_feedback", JSON.stringify(next.filter((rating) => rating.user_id === "demo-user"))); } catch { /* demo persistence is optional */ }
         return next;
       });
       return { error: null };
     }
-    const result = await submitRating(user.id, ratingCourse.id, stars, comment);
+    const learnerName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || profile?.email || user.email;
+    const result = await submitRating(user.id, ratingCourse.id, stars, comment, learnerName);
     if (!result.error) setCourseRatings(await fetchCourseRatings());
     return result;
   };
@@ -161,7 +167,7 @@ export default function AppLayout() {
         isAuthenticated={Boolean(user)}
       />
 
-      <Outlet context={{ courses, coursesLoading, myCourses, myCoursesLoading, enrolledIds, enrollCourse: requestEnroll, reloadMyCourses, notifications, courseRatings, setRatingCourse }} />
+      <Outlet context={{ courses, workshops, coursesLoading, myCourses, myCoursesLoading, enrolledIds, enrollCourse: requestEnroll, reloadMyCourses, notifications, courseRatings, setRatingCourse }} />
 
       {ratingCourse && <RateCourseModal course={ratingCourse} onSubmit={handleRateSubmit} onClose={() => setRatingCourse(null)} />}
       {enrollTarget && (
@@ -182,8 +188,8 @@ export default function AppLayout() {
         <EnrollmentSuccessModal
           course={enrollmentSuccess}
           onClose={() => setEnrollmentSuccess(null)}
-          onContinue={() => { const course = enrollmentSuccess; setEnrollmentSuccess(null); navigate(`/my-courses/${course.id}`); }}
-          onDashboard={() => { setEnrollmentSuccess(null); navigate("/my-courses"); }}
+          onContinue={() => { const course = enrollmentSuccess; setEnrollmentSuccess(null); navigate(playerPathFor(course)); }}
+          onDashboard={() => { setEnrollmentSuccess(null); navigate("/dashboard"); }}
         />
       )}
     </div>

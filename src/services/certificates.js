@@ -1,6 +1,6 @@
 import { supabase, isSupabaseConfigured } from "../lib/supabaseClient";
 import { getCertificateId, getCertificateRegistrationId } from "../lib/certificates.js";
-import { COURSES } from "../data/mockData";
+import { COURSES, WORKSHOPS } from "../data/mockData";
 
 export async function fetchMyCertificates(userId) {
   if (!isSupabaseConfigured || !userId) return [];
@@ -30,6 +30,7 @@ export async function issueCertificate(userId, courseId, details = {}) {
     certificate_id: certificateId,
     user_id: userId,
     course_id: courseId,
+    certificate_type: details.courseType === "workshop" ? "Workshop" : "Course",
     student_name: details.studentName || "Nexrnn Learner",
     course_title: details.courseTitle || courseId,
   };
@@ -63,6 +64,7 @@ export function demoCertificateFor(course, studentName = "Student Name", userId 
     certificate_id: certificateId,
     user_id: "demo-user",
     course_id: course.id,
+    certificate_type: course.courseType === "workshop" ? "Workshop" : "Course",
     student_name: studentName,
     course_title: course.title,
     issued_at: stableDemoIssueDate(userId, course.id),
@@ -76,13 +78,13 @@ export async function verifyCertificate(registrationId) {
     // Demo mode has no database, so verify the same stable IDs used by the
     // demo certificate cards. Include every seeded course so old shared demo
     // links remain valid after a refresh.
-    const demoCourse = COURSES.find((course) => getCertificateRegistrationId("demo-user", course.id) === normalized);
+    const demoCourse = [...COURSES, ...WORKSHOPS].find((course) => getCertificateRegistrationId("demo-user", course.id) === normalized);
     return demoCourse
       ? { data: demoCertificateFor(demoCourse), error: null }
       : { data: null, error: null };
   }
-  const { data: byCertificateId, error: certificateError } = await supabase.from("certificates").select("certificate_id, registration_id, student_name, course_title, course_id, issued_at").eq("certificate_id", normalized).maybeSingle();
+  const { data: byCertificateId, error: certificateError } = await supabase.from("certificates").select("certificate_id, registration_id, certificate_type, student_name, course_title, course_id, issued_at").eq("certificate_id", normalized).maybeSingle();
   if (byCertificateId) return { data: byCertificateId, error: null };
-  const { data: byLegacyId, error: legacyError } = await supabase.from("certificates").select("registration_id, student_name, course_title, course_id, issued_at").eq("registration_id", normalized).maybeSingle();
+  const { data: byLegacyId, error: legacyError } = await supabase.from("certificates").select("registration_id, certificate_type, student_name, course_title, course_id, issued_at").eq("registration_id", normalized).maybeSingle();
   return { data: byLegacyId, error: legacyError || (certificateError && !byLegacyId ? certificateError : null) };
 }

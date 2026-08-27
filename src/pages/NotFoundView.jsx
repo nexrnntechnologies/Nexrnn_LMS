@@ -17,7 +17,7 @@ export default function NotFoundView() {
         <h1 className="text-5xl font-extrabold text-slate-900 mb-2">404</h1>
         <p className="text-slate-500 mb-8">This page doesn't exist — it may have been moved or the link is incorrect.</p>
         <Link
-          to="/my-courses"
+          to="/dashboard"
           className="inline-block text-white font-semibold px-5 py-2.5 rounded-md hover:opacity-90"
           style={{ backgroundColor: BLUE }}
         >

@@ -8,7 +8,7 @@ export default function CreateAccountView() {
   const { signUp, isSupabaseConfigured } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const returnPath = location.state?.from || "/my-courses";
+  const returnPath = location.state?.from || "/dashboard";
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [mobile, setMobile] = useState("");

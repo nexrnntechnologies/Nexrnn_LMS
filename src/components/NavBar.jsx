@@ -10,10 +10,11 @@ export default function NavBar({
 }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const homePath = isAuthenticated ? "/my-courses" : "/";
+  const homePath = isAuthenticated ? "/dashboard" : "/";
   const navItems = [
-    ...(isAuthenticated ? [{ to: "/my-courses", label: "Dashboard", icon: LayoutDashboard, match: (path) => path === "/my-courses" }] : []),
+    ...(isAuthenticated ? [{ to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, match: (path) => path === "/dashboard" }] : []),
     { to: "/courses", label: "Courses", icon: BookOpen, match: (path) => path.startsWith("/courses") },
+    { to: "/workshops", label: "Workshops", icon: BookOpen, match: (path) => path.startsWith("/workshops") },
     ...(isAuthenticated ? [{ to: "/community", label: "Community", icon: Users, match: (path) => path.startsWith("/community") }] : []),
   ];
 
@@ -31,7 +32,7 @@ export default function NavBar({
         </div>
         <div className="relative" onClick={(event) => event.stopPropagation()}>
           <button onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); }} className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full border border-slate-200 hover:bg-slate-50"><div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-slate-500"><UserRound size={14} /></div><span className="text-sm font-semibold text-slate-700 hidden sm:inline">{userLabel || "Account"}</span><ChevronDown size={14} className="text-slate-500" /></button>
-          {profileOpen && <div className="absolute right-0 mt-2 w-52 bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden"><button onClick={() => { navigate("/my-courses"); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><LayoutDashboard size={14} /> My Dashboard</button><button onClick={() => { navigate("/my-account"); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><User size={14} /> My Account</button><button onClick={() => { navigate("/support"); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><LifeBuoy size={14} /> Support <ExternalLink size={11} className="ml-auto text-slate-400" /></button><button onClick={() => { onSignOut(); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-slate-100"><LogOut size={14} /> Sign Out</button></div>}
+          {profileOpen && <div className="absolute right-0 mt-2 w-52 bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden"><button onClick={() => { navigate("/dashboard"); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><LayoutDashboard size={14} /> My Dashboard</button><button onClick={() => { navigate("/my-account"); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><User size={14} /> My Account</button><button onClick={() => { navigate("/support"); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><LifeBuoy size={14} /> Support <ExternalLink size={11} className="ml-auto text-slate-400" /></button><button onClick={() => { onSignOut(); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-slate-100"><LogOut size={14} /> Sign Out</button></div>}
         </div>
       </div> : <div className="flex items-center gap-2"><Link to="/verify-certificate" className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-slate-600 px-3 py-2 rounded-md hover:bg-slate-50"><ShieldCheck size={15} /> Verify Certificate</Link><Link to="/login" className="text-sm font-semibold text-slate-600 px-3 py-2 rounded-md hover:bg-slate-50">Log in</Link><Link to="/createaccount" className="text-sm font-bold text-white px-3 py-2 rounded-md hover:opacity-90" style={{ backgroundColor: BLUE }}>Create account</Link></div>}
     </div>

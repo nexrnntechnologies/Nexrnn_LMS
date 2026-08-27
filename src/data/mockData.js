@@ -3,6 +3,7 @@ import { Sparkles, Megaphone, BrainCircuit, BookOpen } from "lucide-react";
 export const COURSES = [
   {
     id: "demo",
+    courseType: "course",
     icon: Sparkles,
     tag: "DEMO",
     title: "Demo Course",
@@ -26,6 +27,7 @@ export const COURSES = [
   },
   {
     id: "digital-marketing",
+    courseType: "course",
     icon: Megaphone,
     tag: "DIGITAL MARKETING",
     title: "Digital Marketing",
@@ -65,6 +67,7 @@ export const COURSES = [
   },
   {
     id: "artificial-intelligence",
+    courseType: "course",
     icon: BrainCircuit,
     tag: "ARTIFICIAL INTELLIGENCE",
     title: "Artificial Intelligence",
@@ -93,6 +96,7 @@ export const COURSES = [
   },
   {
     id: "web-development",
+    courseType: "course",
     icon: BookOpen,
     tag: "WEB DEVELOPMENT",
     title: "Web Development",
@@ -116,6 +120,34 @@ export const COURSES = [
       "Deploy real projects live",
     ],
     whoShouldTake: ["Beginners wanting to become web developers", "Freelancers wanting to build client sites"],
+    faqs: [],
+  },
+];
+
+
+export const WORKSHOPS = [
+  {
+    id: "digital-marketing-workshop",
+    courseType: "workshop",
+    icon: Megaphone,
+    tag: "WORKSHOP",
+    title: "Digital Marketing Workshop",
+    desc: "A live, practical workshop with guided exercises, expert discussion and an outcome you can use immediately.",
+    duration: "2 Days",
+    level: "Beginner to Intermediate",
+    mode: "Online / Offline",
+    projects: 1,
+    certificate: true,
+    courseComplete: false,
+    mentorship: true,
+    price: 999,
+    originalPrice: 1999,
+    discount: "50% OFF",
+    lessons: 4,
+    rating: 5.0,
+    reviews: 0,
+    whatYoullLearn: ["Plan a practical campaign in a guided session", "Get live feedback from an instructor", "Leave with a workshop project and next steps"],
+    whoShouldTake: ["Students and working professionals", "Business owners wanting a focused learning sprint"],
     faqs: [],
   },
 ];
@@ -204,6 +236,24 @@ export const CURRICULUM_BY_COURSE = {
       lessons: [
         { id: "wd-l3", title: "JavaScript fundamentals", type: "video", duration: "25 MIN", done: false, freePreview: false },
         { id: "wd-l4", title: "Deploying your first project", type: "text", done: false, freePreview: false },
+      ],
+    },
+  ],
+  "digital-marketing-workshop": [
+    {
+      id: "dmw-m1",
+      title: "Workshop Day 1: Strategy Sprint",
+      lessons: [
+        { id: "dmw-l1", title: "Workshop orientation", type: "video", duration: "20 MIN", done: false, freePreview: true },
+        { id: "dmw-l2", title: "Build your campaign plan", type: "text", done: false, freePreview: false },
+      ],
+    },
+    {
+      id: "dmw-m2",
+      title: "Workshop Day 2: Review & Action",
+      lessons: [
+        { id: "dmw-l3", title: "Live review and feedback", type: "video", duration: "30 MIN", done: false, freePreview: false },
+        { id: "dmw-l4", title: "Workshop project submission", type: "text", done: false, freePreview: false },
       ],
     },
   ],

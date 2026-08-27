@@ -26,8 +26,10 @@ function lessonToForm(lesson) {
 const inputClass = "w-full px-3 py-2 text-sm rounded-md border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400";
 const hasInvalidResource = (resources = []) => resources.some((resource) => (resource.label?.trim() || resource.url?.trim()) && (!resource.label?.trim() || !/^https?:\/\//i.test(resource.url?.trim() || "")));
 
-export default function AdminCourseContent() {
+export default function AdminCourseContent({ catalogType = "course" }) {
   const { courseId } = useParams();
+  const itemLabel = catalogType === "workshop" ? "Workshop" : "Course";
+  const catalogBase = catalogType === "workshop" ? "workshops" : "courses";
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newModuleTitle, setNewModuleTitle] = useState("");
@@ -121,8 +123,8 @@ export default function AdminCourseContent() {
 
   return (
     <div className="max-w-5xl mx-auto px-8 py-10">
-      <Link to="/nexrnn/master_nexrnn/admin/courses" className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 mb-4"><ChevronLeft size={15} /> Back to Courses</Link>
-      <h1 className="text-2xl font-extrabold text-slate-900 mb-1">Course Content</h1>
+      <Link to={`/nexrnn/master_nexrnn/admin/${catalogBase}`} className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 mb-4"><ChevronLeft size={15} /> Back to {itemLabel}s</Link>
+      <h1 className="text-2xl font-extrabold text-slate-900 mb-1">{itemLabel} Content</h1>
       <p className="text-sm text-slate-500 mb-6">{courseId}</p>
 
       <form onSubmit={handleAddModule} className="bg-white border border-slate-200 rounded-lg p-4 flex flex-col sm:flex-row gap-3 mb-6">

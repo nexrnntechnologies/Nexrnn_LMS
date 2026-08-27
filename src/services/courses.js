@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from "../lib/supabaseClient";
-import { COURSES, MODULES, CURRICULUM_BY_COURSE, INITIAL_LEARNER_FEEDBACK } from "../data/mockData";
+import { COURSES, WORKSHOPS, MODULES, CURRICULUM_BY_COURSE, INITIAL_LEARNER_FEEDBACK } from "../data/mockData";
 import { Sparkles, Megaphone, BrainCircuit, BookOpen } from "lucide-react";
 
 const ICONS = {
@@ -12,6 +12,7 @@ const ICONS = {
 function mapDbCourse(row) {
   return {
     ...row,
+    courseType: row.course_type || "course",
     id: row.id,
     icon: ICONS[row.icon] || Sparkles,
     tag: row.tag,
@@ -55,11 +56,23 @@ function mapLesson(row) {
   };
 }
 
-export async function fetchCourses() {
-  if (!isSupabaseConfigured) return COURSES;
-  const { data, error } = await supabase.from("courses").select("*").order("created_at");
+export async function fetchCourses(courseType = null) {
+  if (!isSupabaseConfigured) {
+    const catalog = [...COURSES, ...WORKSHOPS];
+    return courseType ? catalog.filter((course) => course.courseType === courseType) : catalog;
+  }
+  let query = supabase.from("courses").select("*").order("created_at");
+  if (courseType) query = query.eq("course_type", courseType);
+  const { data, error } = await query;
   if (error) {
     console.error("fetchCourses failed", error);
+    // Existing installations may not have migration_16 yet. Keep legacy courses visible
+    // while the admin applies the discriminator migration; workshops simply return empty.
+    if (courseType) {
+      const { data: legacyData } = await supabase.from("courses").select("*").order("created_at");
+      const mapped = (legacyData || []).map(mapDbCourse);
+      return mapped.filter((course) => course.courseType === courseType);
+    }
     return [];
   }
   return (data || []).map(mapDbCourse);
@@ -179,7 +192,7 @@ export async function fetchCourseRatings() {
   }));
 }
 
-export async function submitRating(userId, courseId, stars, comment) {
+export async function submitRating(userId, courseId, stars, comment, learnerName = null) {
   if (!isSupabaseConfigured) return { error: { message: "Supabase not configured yet." } };
   const { data: existing, error: lookupError } = await supabase
     .from("course_ratings")
@@ -189,7 +202,7 @@ export async function submitRating(userId, courseId, stars, comment) {
     .maybeSingle();
   if (lookupError) return { error: lookupError };
   if (existing) return { error: { message: "You have already rated this course. Each course can be rated only once." } };
-  return supabase.from("course_ratings").insert({ user_id: userId, course_id: courseId, stars, comment });
+  return supabase.from("course_ratings").insert({ user_id: userId, course_id: courseId, learner_name: learnerName, stars, comment });
 }
 
 export async function markLessonDone(userId, lessonId) {

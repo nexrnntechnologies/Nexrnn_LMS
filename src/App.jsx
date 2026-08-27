@@ -57,16 +57,23 @@ export default function App() {
 
     {/* Course discovery and preview are public. Enroll buttons request login. */}
     <Route element={<AppLayout />}>
-      <Route path="/courses" element={<CoursesView />} />
-      <Route path="/courses/:courseId" element={<CourseDetailView />} />
-      <Route path="/my-courses/:courseId" element={<CoursePlayerView />} />
+        <Route path="/courses" element={<CoursesView catalogType="course" />} />
+        <Route path="/courses/:courseId" element={<CourseDetailView courseType="course" />} />
+        <Route path="/workshops" element={<CoursesView catalogType="workshop" />} />
+        <Route path="/workshops/:courseId" element={<CourseDetailView courseType="workshop" />} />
+        <Route path="/my-courses/:courseId" element={<CoursePlayerView courseType="course" />} />
+        <Route path="/my-workshops/:courseId" element={<CoursePlayerView courseType="workshop" />} />
     </Route>
 
     {/* Dashboard, certificates, community and support are account areas. */}
     <Route element={<RequireAuth />}>
       <Route element={<AppLayout />}>
-        <Route path="/my-courses" element={<DashboardView />} />
-        <Route path="/my-courses/certificates" element={<ProfileView />} />
+        <Route path="/dashboard" element={<DashboardView />} />
+        <Route path="/my-courses" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/my-workshops" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard/certificates" element={<ProfileView />} />
+        <Route path="/my-courses/certificates" element={<Navigate to="/dashboard/certificates" replace />} />
+        <Route path="/my-workshops/certificates" element={<Navigate to="/dashboard/certificates" replace />} />
         <Route path="/my-account" element={<ProfileView />} />
         <Route path="/my-account/user-id" element={<ProfileView />} />
         <Route path="/my-account/password" element={<ProfileView />} />
@@ -80,16 +87,20 @@ export default function App() {
     <Route path={`${ADMIN_BASE}/login`} element={<AdminLogin />} />
     <Route path={ADMIN_BASE} element={<AdminLayout />}>
       <Route index element={<AdminDashboard />} />
-      <Route path="courses" element={<AdminCourses />} />
-      <Route path="courses/:courseId/content" element={<AdminCourseContent />} />
+      <Route path="courses" element={<AdminCourses catalogType="course" />} />
+      <Route path="courses/:courseId/content" element={<AdminCourseContent catalogType="course" />} />
+      <Route path="workshops" element={<AdminCourses catalogType="workshop" />} />
+      <Route path="workshops/:courseId/content" element={<AdminCourseContent catalogType="workshop" />} />
       <Route path="users" element={<AdminUsers />} />
       <Route path="users/:userId" element={<AdminUserDetail />} />
       <Route path="communities" element={<AdminCommunities />} />
       <Route path="notifications" element={<AdminNotifications />} />
       <Route path="support" element={<AdminSupport />} />
       <Route path="queries" element={<AdminQueries />} />
-      <Route path="course-feedback" element={<AdminCourseFeedback />} />
-      <Route path="enrollments" element={<AdminEnrollments />} />
+      <Route path="feedback" element={<AdminCourseFeedback />} />
+      <Route path="course-feedback" element={<Navigate to={`${ADMIN_BASE}/feedback`} replace />} />
+      <Route path="enrollments" element={<AdminEnrollments catalogType="course" />} />
+      <Route path="workshop-enrollments" element={<AdminEnrollments catalogType="workshop" />} />
       <Route path="certificates" element={<AdminCertificates />} />
     </Route>
 

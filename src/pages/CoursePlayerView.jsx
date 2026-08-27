@@ -8,16 +8,21 @@ import { normalizeVideoUrl, normalizeDocumentUrl } from "../lib/media.js";
 import LockedContentModal from "../components/LockedContentModal.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 
-export default function CoursePlayerView() {
+export default function CoursePlayerView({ courseType = "course" }) {
   const { courseId } = useParams();
   const [searchParams] = useSearchParams();
   const initialLessonId = searchParams.get("lesson");
   const isPreview = searchParams.get("preview") === "1";
   const navigate = useNavigate();
-  const { courses, myCourses, reloadMyCourses, enrollCourse, myCoursesLoading, coursesLoading } = useOutletContext();
+  const { courses, workshops, myCourses, reloadMyCourses, enrollCourse, myCoursesLoading, coursesLoading } = useOutletContext();
   const { user, isSupabaseConfigured } = useAuth();
-  const enrolledCourse = myCourses.find((item) => item.id === courseId);
-  const course = enrolledCourse || (isPreview ? courses.find((item) => item.id === courseId) : null);
+  const isWorkshop = courseType === "workshop";
+  const itemLabel = isWorkshop ? "Workshop" : "Course";
+  const catalog = isWorkshop ? workshops : courses;
+  const catalogPath = isWorkshop ? "/workshops" : "/courses";
+  const certificatePath = "/dashboard/certificates";
+  const enrolledCourse = myCourses.find((item) => item.id === courseId && item.courseType === courseType);
+  const course = enrolledCourse || (isPreview ? catalog.find((item) => item.id === courseId) : null);
   const isEnrolled = Boolean(enrolledCourse);
 
   const [modules, setModules] = useState(CURRICULUM_BY_COURSE[courseId] || MODULES);
@@ -29,8 +34,8 @@ export default function CoursePlayerView() {
 
   useEffect(() => {
     if (myCoursesLoading || coursesLoading) return;
-    if (!course) navigate(`/courses/${courseId}`, { replace: true });
-  }, [course, courseId, navigate, myCoursesLoading, coursesLoading]);
+    if (!course) navigate(`${catalogPath}/${courseId}`, { replace: true });
+  }, [course, courseId, navigate, catalogPath, myCoursesLoading, coursesLoading]);
 
   useEffect(() => {
     if (!course) return;
@@ -78,7 +83,7 @@ export default function CoursePlayerView() {
 
   const markCompleteAndContinue = async () => {
     if (!isEnrolled) {
-      navigate(`/courses/${courseId}`);
+      navigate(`${catalogPath}/${courseId}`);
       return;
     }
     setModules((current) => current.map((module) => ({ ...module, lessons: module.lessons.map((lesson) => lesson.id === activeLesson.id ? { ...lesson, done: true } : lesson) })));
@@ -89,7 +94,7 @@ export default function CoursePlayerView() {
     }
     const next = flatLessons[flatLessons.findIndex((lesson) => lesson.id === activeLesson.id) + 1];
     if (next) {
-      if (isPreview && !next.freePreview) { navigate(`/courses/${courseId}`); return; }
+      if (isPreview && !next.freePreview) { navigate(`${catalogPath}/${courseId}`); return; }
       activeLessonIdRef.current = next.id;
       setActiveLesson(next);
       const parent = modules.find((module) => module.lessons.some((lesson) => lesson.id === next.id));
@@ -102,7 +107,7 @@ export default function CoursePlayerView() {
   return (
     <div className="flex flex-col md:flex-row h-[calc(100vh-64px)]">
       <aside className="w-full md:w-80 border-r border-slate-200 bg-white overflow-y-auto shrink-0">
-        <button onClick={() => navigate(isPreview ? `/courses/${courseId}` : "/my-courses")} className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 px-5 pt-5"><ChevronLeft size={15} /> {isPreview ? "Back to Course" : "Go to Dashboard"}</button>
+        <button onClick={() => navigate(isPreview ? `${catalogPath}/${courseId}` : "/dashboard")} className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 px-5 pt-5"><ChevronLeft size={15} /> {isPreview ? `Back to ${itemLabel}` : "Go to Dashboard"}</button>
         <div className="px-5 pt-4"><h2 className="font-extrabold text-slate-900 leading-snug">{course.title}</h2><div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mt-3 mb-1"><div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: BLUE }} /></div><p className="text-[12px] text-slate-500 mb-4">{isPreview ? "Free preview" : `${pct}% complete`}</p></div>
         <div className="px-5 pb-4"><div className="rounded-lg p-4" style={{ backgroundColor: NAVY_SOFT }}><p className="text-[13px] text-slate-200 mb-3">Join the conversation in the Nexrnn {course.title} — Community.</p><button onClick={() => navigate("/community")} className="w-full text-xs font-bold text-white border border-white/20 rounded-md py-2 flex items-center justify-center gap-1 hover:bg-white/10">GO TO COMMUNITY <ArrowRight size={12} /></button></div></div>
         <nav className="border-t border-slate-100">
@@ -117,7 +122,7 @@ export default function CoursePlayerView() {
         {activeLesson.type === "text" ? <TextLesson lesson={activeLesson} /> : media.kind === "iframe" ? <div className="aspect-video rounded-xl overflow-hidden mb-6 bg-black"><iframe src={media.src} title={activeLesson.title} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /></div> : media.kind === "video" ? <div className="aspect-video rounded-xl overflow-hidden mb-6 bg-black"><video src={media.src} controls playsInline className="w-full h-full" /></div> : <div className="aspect-video rounded-xl flex flex-col gap-3 items-center justify-center mb-6" style={{ backgroundColor: NAVY }}><Play size={30} className="text-white/70" /><p className="text-white/70 text-sm">No video link has been added yet.</p></div>}
         <LessonResources resources={activeLesson.resources} />
         <p className="text-sm text-slate-600 mb-8">{isPreview ? "You are viewing a free preview lesson." : "Please watch or read this lesson fully before moving to the next one."}</p>
-        {certificateReady ? <div className="rounded-lg border border-green-100 bg-green-50 px-4 py-4 flex flex-wrap items-center justify-between gap-4"><div><p className="font-bold text-green-800">Course completed 🎉</p><p className="text-sm text-green-700 mt-1">Your certificate is ready to view and download.</p></div><button onClick={() => navigate(`/my-courses/certificates?course=${encodeURIComponent(courseId)}`)} className="text-white font-semibold px-4 py-2.5 rounded-md flex items-center gap-2 hover:opacity-90" style={{ backgroundColor: BLUE }}>View Certificate <ArrowRight size={16} /></button></div> : courseCompleted ? <div className="rounded-lg border border-amber-100 bg-amber-50 px-4 py-4"><p className="font-bold text-amber-800">All current lessons completed.</p><p className="text-sm text-amber-700 mt-1">This course is still ongoing. The certificate will be available after the admin marks the course complete.</p></div> : <button onClick={markCompleteAndContinue} disabled={isEnrolled && isLastLesson && activeLesson.done} className="text-white font-semibold px-5 py-2.5 rounded-md flex items-center gap-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed" style={{ backgroundColor: BLUE }}>{isPreview ? "Enroll to continue" : isLastLesson ? "Complete Lesson" : "Complete & Continue"}{isPreview ? <ArrowRight size={16} /> : !(isLastLesson && activeLesson.done) && <ChevronRight size={16} />}</button>}
+        {certificateReady ? <div className="rounded-lg border border-green-100 bg-green-50 px-4 py-4 flex flex-wrap items-center justify-between gap-4"><div><p className="font-bold text-green-800">{itemLabel} completed 🎉</p><p className="text-sm text-green-700 mt-1">Your certificate is ready to view and download.</p></div><button onClick={() => navigate(`${certificatePath}?${isWorkshop ? "workshop" : "course"}=${encodeURIComponent(courseId)}`)} className="text-white font-semibold px-4 py-2.5 rounded-md flex items-center gap-2 hover:opacity-90" style={{ backgroundColor: BLUE }}>View Certificate <ArrowRight size={16} /></button></div> : courseCompleted ? <div className="rounded-lg border border-amber-100 bg-amber-50 px-4 py-4"><p className="font-bold text-amber-800">All current {itemLabel.toLowerCase()} lessons completed.</p><p className="text-sm text-amber-700 mt-1">This {itemLabel.toLowerCase()} is still ongoing. The certificate will be available after the admin marks it complete.</p></div> : <button onClick={markCompleteAndContinue} disabled={isEnrolled && isLastLesson && activeLesson.done} className="text-white font-semibold px-5 py-2.5 rounded-md flex items-center gap-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed" style={{ backgroundColor: BLUE }}>{isPreview ? "Enroll to continue" : isLastLesson ? "Complete Lesson" : "Complete & Continue"}{isPreview ? <ArrowRight size={16} /> : !(isLastLesson && activeLesson.done) && <ChevronRight size={16} />}</button>}
       </div></main>
       {lockedLesson && <LockedContentModal lesson={lockedLesson} onClose={() => setLockedLesson(null)} onBuyNow={() => { setLockedLesson(null); enrollCourse(course); }} />}
     </div>

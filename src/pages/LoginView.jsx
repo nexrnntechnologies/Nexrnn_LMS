@@ -8,7 +8,7 @@ export default function LoginView() {
   const { signIn, resetPassword, isSupabaseConfigured } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const returnPath = location.state?.from || "/my-courses";
+  const returnPath = location.state?.from || "/dashboard";
   const [mode, setMode] = useState("signin"); // "signin" | "forgot"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

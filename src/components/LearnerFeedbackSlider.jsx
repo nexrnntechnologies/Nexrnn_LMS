@@ -15,12 +15,12 @@ export default function LearnerFeedbackSlider({ ratings = [], courseId = null })
   };
 
   return (
-    <section className="mt-14" aria-label="Learner feedback">
+    <section className="mt-14" aria-label="Feedback">
       <div className="flex items-end justify-between gap-4 mb-5">
         <div className="flex items-start gap-2">
           <MessageSquare size={19} style={{ color: BLUE }} className="mt-0.5 shrink-0" />
           <div>
-            <p className="text-xs font-bold tracking-[0.2em] text-slate-400 uppercase mb-1">Learner feedback</p>
+            <p className="text-xs font-bold tracking-[0.2em] text-slate-400 uppercase mb-1">Feedback</p>
             <h2 className="text-xl font-extrabold text-slate-900">What students say after completing their courses.</h2>
           </div>
         </div>

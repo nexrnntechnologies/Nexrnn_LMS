@@ -45,11 +45,16 @@ function DemoMedia({ url, title }) {
   return <div className="aspect-video rounded-lg flex flex-col items-center justify-center gap-3" style={{ backgroundColor: NAVY }}><div className="w-12 h-12 rounded-full border-2 border-white/40 flex items-center justify-center"><PlayCircle size={22} className="text-white/70" /></div><p className="text-white/70 text-sm font-semibold">Demo video coming soon</p></div>;
 }
 
-export default function CourseDetailView() {
+export default function CourseDetailView({ courseType = "course" }) {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { courses, coursesLoading, enrolledIds, enrollCourse, courseRatings = [] } = useOutletContext();
-  const course = courses.find((c) => c.id === courseId);
+  const { courses, workshops, coursesLoading, enrolledIds, enrollCourse, courseRatings = [] } = useOutletContext();
+  const isWorkshop = courseType === "workshop";
+  const catalog = isWorkshop ? workshops : courses;
+  const catalogPath = isWorkshop ? "/workshops" : "/courses";
+  const playerPath = isWorkshop ? "/my-workshops" : "/my-courses";
+  const itemLabel = isWorkshop ? "Workshop" : "Course";
+  const course = catalog.find((c) => c.id === courseId);
   const enrolled = enrolledIds.includes(courseId);
 
   const [curriculum, setCurriculum] = useState(CURRICULUM_BY_COURSE[courseId] || []);
@@ -65,14 +70,14 @@ export default function CourseDetailView() {
   }, [courseId]);
 
   if (coursesLoading) return <div className="min-h-[calc(100vh-64px)] flex items-center justify-center text-sm text-slate-400">Loading course…</div>;
-  if (!course) return <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-6 text-center"><div><h1 className="text-2xl font-extrabold text-slate-900 mb-2">Course not found</h1><p className="text-sm text-slate-500 mb-5">This course may have been removed or the link is incorrect.</p><button onClick={() => navigate("/courses")} className="text-white font-semibold px-4 py-2.5 rounded-md" style={{ backgroundColor: BLUE }}>Browse Courses</button></div></div>;
+  if (!course) return <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-6 text-center"><div><h1 className="text-2xl font-extrabold text-slate-900 mb-2">{itemLabel} not found</h1><p className="text-sm text-slate-500 mb-5">This {itemLabel.toLowerCase()} may have been removed or the link is incorrect.</p><button onClick={() => navigate(catalogPath)} className="text-white font-semibold px-4 py-2.5 rounded-md" style={{ backgroundColor: BLUE }}>Browse {itemLabel}s</button></div></div>;
   const Icon = course.icon;
 
   const handleLessonClick = (lesson) => {
     if (enrolled) {
-      navigate(`/my-courses/${course.id}?lesson=${lesson.id}`);
+      navigate(`${playerPath}/${course.id}?lesson=${lesson.id}`);
     } else if (lesson.freePreview) {
-      navigate(`/my-courses/${course.id}?lesson=${lesson.id}&preview=1`);
+      navigate(`${playerPath}/${course.id}?lesson=${lesson.id}&preview=1`);
     } else {
       setLockedModalOpen(true);
     }
@@ -82,11 +87,11 @@ export default function CourseDetailView() {
     <div className="bg-slate-50 min-h-[calc(100vh-64px)]">
       <div className="max-w-6xl mx-auto px-6 py-10">
         <button
-          onClick={() => navigate("/courses")}
+          onClick={() => navigate(catalogPath)}
           className="flex items-center gap-1.5 text-sm font-bold mb-6 hover:underline"
           style={{ color: BLUE }}
         >
-          <ArrowLeft size={15} /> All Courses
+          <ArrowLeft size={15} /> All {itemLabel}s
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
@@ -109,7 +114,7 @@ export default function CourseDetailView() {
           {/* Right: sticky fee card */}
           <div>
             <div className="border-2 border-slate-900 rounded-xl bg-white p-6 lg:sticky lg:top-24">
-              <p className="text-[11px] font-bold tracking-wide text-slate-400 mb-2">COURSE FEE</p>
+              <p className="text-[11px] font-bold tracking-wide text-slate-400 mb-2">{itemLabel.toUpperCase()} FEE</p>
               <div className="flex items-baseline gap-2 mb-2">
                 <span className="text-3xl font-extrabold" style={{ color: BLUE }}>
                   {course.price === 0 ? "Free" : `₹${course.price.toLocaleString("en-IN")}`}
@@ -145,7 +150,7 @@ export default function CourseDetailView() {
                 className="w-full font-bold text-white rounded-md py-3 flex items-center justify-center gap-2 hover:opacity-90"
                 style={{ backgroundColor: BLUE }}
               >
-                {enrolled ? "Go to Course" : "Enroll Now"} <ArrowLeft size={15} className="rotate-180" />
+                {enrolled ? `Go to ${itemLabel}` : "Enroll Now"} <ArrowLeft size={15} className="rotate-180" />
               </button>
             </div>
           </div>
@@ -155,7 +160,7 @@ export default function CourseDetailView() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-14">
           <div>
             <h2 className="font-extrabold text-slate-900 uppercase flex items-center gap-2 mb-4">
-              <PlayCircle size={18} style={{ color: BLUE }} /> Course Demo Video
+              <PlayCircle size={18} style={{ color: BLUE }} /> {itemLabel} Demo Video
             </h2>
             <DemoMedia url={course.demoVideoUrl} title={`${course.title} demo video`} />
           </div>
@@ -174,7 +179,7 @@ export default function CourseDetailView() {
                 <p className="text-xs text-slate-400 mb-1">This certifies that</p>
                 <p className="font-extrabold text-slate-800 uppercase mb-3">[ Student Name ]</p>
                 <p className="text-xs text-slate-400 mb-1">has successfully completed the</p>
-                <p className="font-bold text-sm mb-3" style={{ color: BLUE }}>{course.title} Course</p>
+                <p className="font-bold text-sm mb-3" style={{ color: BLUE }}>{course.title} {itemLabel}</p>
                 <p className="text-[11px] text-slate-400">Sample preview — not an issued certificate</p>
               </div>
             </div>
@@ -244,7 +249,7 @@ export default function CourseDetailView() {
 
           <div>
             <div className="rounded-lg p-6 bg-white border border-slate-200">
-              <h3 className="font-extrabold text-slate-900 uppercase mb-4 text-sm">Who Should Take This Course</h3>
+              <h3 className="font-extrabold text-slate-900 uppercase mb-4 text-sm">Who Should Take This {itemLabel}</h3>
               <div className="space-y-3">
                 {(course.whoShouldTake || []).map((item, i) => (
                   <div key={i} className="flex items-start gap-2 text-sm text-slate-600">

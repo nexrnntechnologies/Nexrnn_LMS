@@ -33,14 +33,16 @@ export default function AdminLayout() {
   const navItems = [
     { to: ADMIN_BASE, label: "Overview", icon: LayoutDashboard, end: true },
     { to: `${ADMIN_BASE}/courses`, label: "Courses", icon: BookOpen },
+    { to: `${ADMIN_BASE}/workshops`, label: "Workshops", icon: BookOpen },
     { to: `${ADMIN_BASE}/enrollments`, label: "Course Enrollments", icon: GraduationCap },
+    { to: `${ADMIN_BASE}/workshop-enrollments`, label: "Workshop Enrollments", icon: GraduationCap },
     { to: `${ADMIN_BASE}/certificates`, label: "Issued Certificates", icon: Award },
     { to: `${ADMIN_BASE}/users`, label: "Registered Users", icon: Users },
     { to: `${ADMIN_BASE}/communities`, label: "Communities", icon: MessageSquare },
     { to: `${ADMIN_BASE}/notifications`, label: "Notifications", icon: Bell },
     { to: `${ADMIN_BASE}/support`, label: "Support", icon: MessageSquare },
     { to: `${ADMIN_BASE}/queries`, label: "Queries", icon: MessageSquare },
-    { to: `${ADMIN_BASE}/course-feedback`, label: "Course Feedback", icon: Star },
+    { to: `${ADMIN_BASE}/feedback`, label: "Feedback", icon: Star },
   ];
 
   const handleSignOut = async () => {
