@@ -38,7 +38,8 @@ export default function LearnerFeedbackSlider({ ratings = [], courseId = null })
               <span className="inline-flex items-center gap-1 text-sm font-bold text-amber-600 shrink-0">{rating.stars}<Star size={14} className="fill-amber-400 text-amber-400" /></span>
             </div>
             <p className="text-sm text-slate-600 leading-relaxed min-h-[66px]">“{rating.comment || "This learner left a star rating without a written comment."}”</p>
-            <p className="text-[11px] text-slate-400 mt-5">Verified learner feedback{rating.created_at ? ` • ${new Date(rating.created_at).toLocaleDateString()}` : ""}</p>
+            <p className="text-sm font-bold text-slate-800 mt-5">{rating.learner_name || rating.learnerName || "Nexrnn Learner"}</p>
+            <p className="text-[11px] text-slate-400 mt-1">Verified learner feedback{rating.created_at ? ` • ${new Date(rating.created_at).toLocaleDateString()}` : ""}</p>
           </article>
         ))}
       </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, useSearchParams, useOutletContext } from "react-router-dom";
 import { ChevronLeft, ArrowRight, CheckCircle2, Circle, Video, FileText, Play, ChevronRight, Lock, FileDown, ExternalLink } from "lucide-react";
 import { NAVY, NAVY_SOFT, BLUE } from "../theme";
@@ -25,6 +25,7 @@ export default function CoursePlayerView() {
   const [openModules, setOpenModules] = useState({});
   const [lockedLesson, setLockedLesson] = useState(null);
   const [loading, setLoading] = useState(true);
+  const activeLessonIdRef = useRef(null);
 
   useEffect(() => {
     if (myCoursesLoading || coursesLoading) return;
@@ -40,17 +41,21 @@ export default function CoursePlayerView() {
       setModules(next);
       const allLessons = next.flatMap((module) => module.lessons);
       const requested = allLessons.find((lesson) => lesson.id === initialLessonId);
+      const previouslyActive = allLessons.find((lesson) => lesson.id === activeLessonIdRef.current);
       const firstAllowed = isPreview ? allLessons.find((lesson) => lesson.freePreview) : allLessons[0];
-      const target = requested && (!isPreview || requested.freePreview) ? requested : firstAllowed;
+      const target = requested && (!isPreview || requested.freePreview) ? requested : previouslyActive || firstAllowed;
+      activeLessonIdRef.current = target?.id || null;
       setActiveLesson(target || null);
       const parent = next.find((module) => module.lessons.some((lesson) => lesson.id === target?.id));
       setOpenModules(parent ? { [parent.id]: true } : {});
       setLoading(false);
     });
     return () => { active = false; };
-  }, [courseId, course?.id, isEnrolled, initialLessonId]);
+  }, [courseId, course?.id, course?.progress, course?.courseComplete, isEnrolled, initialLessonId, user?.id]);
 
-  if (myCoursesLoading || coursesLoading || !course || loading) return <div className="min-h-[calc(100vh-64px)] flex items-center justify-center text-sm text-slate-400">Loading course…</div>;
+  // Do not let a background enrollment/progress refresh unmount the player.
+  // Keep the current course content visible while new lessons are fetched.
+  if (coursesLoading || !course || loading) return <div className="min-h-[calc(100vh-64px)] flex items-center justify-center text-sm text-slate-400">Loading course…</div>;
   if (!activeLesson) return <div className="min-h-[calc(100vh-64px)] flex items-center justify-center text-sm text-slate-500">No lessons have been added to this course yet.</div>;
 
   const flatLessons = modules.flatMap((module) => module.lessons);
@@ -67,6 +72,7 @@ export default function CoursePlayerView() {
       setLockedLesson(lesson);
       return;
     }
+    activeLessonIdRef.current = lesson.id;
     setActiveLesson(lesson);
   };
 
@@ -84,6 +90,7 @@ export default function CoursePlayerView() {
     const next = flatLessons[flatLessons.findIndex((lesson) => lesson.id === activeLesson.id) + 1];
     if (next) {
       if (isPreview && !next.freePreview) { navigate(`/courses/${courseId}`); return; }
+      activeLessonIdRef.current = next.id;
       setActiveLesson(next);
       const parent = modules.find((module) => module.lessons.some((lesson) => lesson.id === next.id));
       if (parent) setOpenModules((current) => ({ ...current, [parent.id]: true }));

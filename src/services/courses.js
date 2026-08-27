@@ -170,7 +170,7 @@ export async function fetchCourseRatings() {
   if (!isSupabaseConfigured) return getDemoCourseRatings();
   const { data, error } = await supabase
     .from("course_ratings")
-    .select("id, course_id, stars, comment, created_at, courses(title)")
+    .select("id, user_id, course_id, learner_name, stars, comment, created_at, courses(title)")
     .order("created_at", { ascending: false });
   if (error) return [];
   return (data || []).map((rating) => ({

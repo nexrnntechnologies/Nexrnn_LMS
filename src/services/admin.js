@@ -329,12 +329,46 @@ export async function adminFetchCourseFeedback() {
   if (!isSupabaseConfigured) return { data: [], error: notConfigured() };
   const { data, error } = await supabase
     .from("course_ratings")
-    .select("id, user_id, course_id, stars, comment, created_at, courses(title)")
+    .select("id, user_id, course_id, learner_name, stars, comment, created_at, courses(title)")
     .order("created_at", { ascending: false });
   return {
     data: (data || []).map((rating) => ({ ...rating, courseTitle: rating.courses?.title || rating.course_id })),
     error,
   };
+}
+
+export async function adminFetchFeedbackOptions() {
+  if (!isSupabaseConfigured) return { users: [], courses: [], error: notConfigured() };
+  const [{ data: users, error: usersError }, { data: courses, error: coursesError }] = await Promise.all([
+    supabase.from("profiles").select("id, first_name, last_name, email, user_registration_id").order("created_at", { ascending: false }),
+    supabase.from("courses").select("id, title").order("created_at"),
+  ]);
+  return { users: users || [], courses: courses || [], error: usersError || coursesError };
+}
+
+export async function adminCreateCourseFeedback(fields) {
+  if (!isSupabaseConfigured) return { error: notConfigured() };
+  return supabase.from("course_ratings").insert({
+    user_id: fields.user_id,
+    course_id: fields.course_id,
+    learner_name: fields.learner_name || null,
+    stars: Number(fields.stars),
+    comment: fields.comment?.trim() || null,
+  });
+}
+
+export async function adminUpdateCourseFeedback(id, fields) {
+  if (!isSupabaseConfigured) return { error: notConfigured() };
+  const allowed = ["user_id", "course_id", "learner_name", "stars", "comment"];
+  const safeFields = Object.fromEntries(Object.entries(fields || {}).filter(([key]) => allowed.includes(key)));
+  if (safeFields.stars !== undefined) safeFields.stars = Number(safeFields.stars);
+  if (safeFields.comment !== undefined) safeFields.comment = safeFields.comment?.trim() || null;
+  return supabase.from("course_ratings").update(safeFields).eq("id", id);
+}
+
+export async function adminDeleteCourseFeedback(id) {
+  if (!isSupabaseConfigured) return { error: notConfigured() };
+  return supabase.from("course_ratings").delete().eq("id", id);
 }
 
 export async function adminFetchSupportRequests() {

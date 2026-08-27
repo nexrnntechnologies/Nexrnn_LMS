@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import NavBar from "../components/NavBar.jsx";
 import RateCourseModal from "../components/RateCourseModal.jsx";
@@ -20,20 +20,28 @@ export default function AppLayout() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifications, setNotifications] = useState(isSupabaseConfigured ? [] : INITIAL_NOTIFICATIONS);
   const [courseRatings, setCourseRatings] = useState(isSupabaseConfigured ? [] : getDemoCourseRatings());
+  const myCoursesRef = useRef(myCourses);
   const [ratingCourse, setRatingCourse] = useState(null);
   const [enrollTarget, setEnrollTarget] = useState(null);
   const [enrollmentSuccess, setEnrollmentSuccess] = useState(null);
   const [enrollSubmitting, setEnrollSubmitting] = useState(false);
   const [enrollError, setEnrollError] = useState("");
+  myCoursesRef.current = myCourses;
 
   const reloadMyCourses = useCallback(async () => {
     if (!isSupabaseConfigured || !user) {
       setMyCoursesLoading(false);
       return;
     }
-    setMyCoursesLoading(true);
+    // Keep the current course list rendered while refreshing progress. A
+    // background refresh must not unmount CoursePlayerView and flash the
+    // loading screen while new content or lesson progress is being read.
     try {
-      setMyCourses(await fetchMyCourses(user.id));
+      const nextCourses = await fetchMyCourses(user.id);
+      // Keep the current list if a transient Supabase read fails. Replacing
+      // it with [] makes CoursePlayerView think the enrollment disappeared
+      // and can bounce between the loading and course routes.
+      if (nextCourses.length || myCoursesRef.current.length === 0) setMyCourses(nextCourses);
     } finally {
       setMyCoursesLoading(false);
     }

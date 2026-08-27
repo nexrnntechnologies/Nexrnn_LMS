@@ -104,7 +104,8 @@ nexrnn-lms/
 │   ├── migration_11.sql    # run eleventh — immutable certificate number and issue date
 │   ├── migration_12.sql    # run twelfth — idempotent certificate storage/RPC repair
 │   ├── migration_13.sql    # run thirteenth — profile fields, admin user CRUD, one-time ratings and website visits
-│   └── migration_14.sql    # run fourteenth — course completion gate and content-change reset
+│   ├── migration_14.sql    # run fourteenth — course completion gate and content-change reset
+│   └── migration_15.sql    # run fifteenth — full admin feedback CRUD and learner author names
 └── src/
     ├── main.jsx             # wraps the app in <BrowserRouter>
     ├── App.jsx               # all routes are defined here
@@ -219,17 +220,19 @@ nexrnn-lms/
    This adds Gender and City signup storage, admin user update/delete access, immutable ID protections, one-time completed-course ratings and website visit analytics.
 15. **New query** again, paste the entire contents of `supabase/migration_14.sql`, and click **Run**.
    This adds the admin-controlled Course Complete / certificate-ready switch. Ongoing courses never issue a certificate, even at 100% learner progress. Any later module or lesson change automatically resets the course to Ongoing, while existing certificates remain preserved.
-16. Go to **Project Settings → API** and copy your **Project URL** and **anon public key**.
-17. In the project folder, copy `.env.example` to `.env`:
+16. **New query** again, paste the entire contents of `supabase/migration_15.sql`, and click **Run**.
+   This adds the learner author name and full admin create/edit/delete controls for Course Feedback.
+17. Go to **Project Settings → API** and copy your **Project URL** and **anon public key**.
+18. In the project folder, copy `.env.example` to `.env`:
    ```bash
    cp .env.example .env
    ```
-18. Open `.env` and paste in your values:
+19. Open `.env` and paste in your values:
    ```
    VITE_SUPABASE_URL=https://your-project-ref.supabase.co
    VITE_SUPABASE_ANON_KEY=your-anon-public-key
    ```
-19. Restart the dev server (`npm run dev`). The app will now:
+20. Restart the dev server (`npm run dev`). The app will now:
    - Require sign in / sign up at `/login` (name, mobile, gender and city are captured at `/createaccount`)
    - Load courses from your `courses` table instead of demo data
    - Save enrollments (with contact + payment details), lesson progress, one-time ratings and notifications per signed-in user
@@ -244,7 +247,7 @@ You can go back to demo mode anytime by removing/renaming `.env`.
 
 The admin panel shares the same Supabase user accounts — it just checks a `role` column.
 
-1. Connect Supabase first (steps above, including `migration_2.sql`, `migration_3.sql`, `migration_4.sql`, `migration_5.sql`, `migration_6.sql`, `migration_7.sql`, `migration_8.sql`, `migration_9.sql`, `migration_10.sql`, `migration_11.sql`, `migration_12.sql`, `migration_13.sql` and `migration_14.sql`).
+1. Connect Supabase first (steps above, including `migration_2.sql`, `migration_3.sql`, `migration_4.sql`, `migration_5.sql`, `migration_6.sql`, `migration_7.sql`, `migration_8.sql`, `migration_9.sql`, `migration_10.sql`, `migration_11.sql`, `migration_12.sql`, `migration_13.sql`, `migration_14.sql` and `migration_15.sql`).
 2. Sign up a normal account at `/createaccount` with the email you want to use as admin.
 3. In Supabase's SQL Editor, run:
    ```sql
@@ -259,6 +262,7 @@ The admin panel shares the same Supabase user accounts — it just checks a `rol
    - **Communities** — create/edit/delete communities linked to a course, and create/edit/delete announcements (new announcements auto-notify enrolled students)
    - **Notifications** — send a message to all users, or to everyone enrolled in one course, with an optional internal or external redirect link
    - **Queries** — manage public landing-page questions, set Open/In progress/Resolved, and reply manually through the user's email client
+   - **Course Feedback** — add, edit and delete feedback on behalf of a selected learner; the selected learner name is shown publicly
    - **Overview** — view website visits and unique visitors captured from public pages
    - **Courses** — tick **Course complete / certificate ready** only after all content is final; leave it unticked for ongoing courses
 

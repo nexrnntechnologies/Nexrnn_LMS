@@ -210,9 +210,9 @@ export const CURRICULUM_BY_COURSE = {
 };
 
 export const INITIAL_LEARNER_FEEDBACK = [
-  { id: "demo-feedback-1", user_id: "learner-1", course_id: "digital-marketing", courseTitle: "Digital Marketing", stars: 5, comment: "The practical campaign exercises made it easy to apply what I learned immediately.", created_at: "2026-07-18T10:00:00.000Z" },
-  { id: "demo-feedback-2", user_id: "learner-2", course_id: "artificial-intelligence", courseTitle: "Artificial Intelligence", stars: 5, comment: "Clear explanations, useful prompts and projects that I could add to my portfolio.", created_at: "2026-07-10T10:00:00.000Z" },
-  { id: "demo-feedback-3", user_id: "learner-3", course_id: "web-development", courseTitle: "Web Development", stars: 4, comment: "A helpful learning path from fundamentals to building and deploying a real website.", created_at: "2026-06-28T10:00:00.000Z" },
+  { id: "demo-feedback-1", user_id: "learner-1", learner_name: "Priya Sharma", course_id: "digital-marketing", courseTitle: "Digital Marketing", stars: 5, comment: "The practical campaign exercises made it easy to apply what I learned immediately.", created_at: "2026-07-18T10:00:00.000Z" },
+  { id: "demo-feedback-2", user_id: "learner-2", learner_name: "Rahul Verma", course_id: "artificial-intelligence", courseTitle: "Artificial Intelligence", stars: 5, comment: "Clear explanations, useful prompts and projects that I could add to my portfolio.", created_at: "2026-07-10T10:00:00.000Z" },
+  { id: "demo-feedback-3", user_id: "learner-3", learner_name: "Ananya Singh", course_id: "web-development", courseTitle: "Web Development", stars: 4, comment: "A helpful learning path from fundamentals to building and deploying a real website.", created_at: "2026-06-28T10:00:00.000Z" },
 ];
 
 export const INITIAL_NOTIFICATIONS = [
