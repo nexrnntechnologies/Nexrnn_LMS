@@ -9,7 +9,7 @@ export async function fetchNotifications(userId) {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
   if (error) return INITIAL_NOTIFICATIONS;
-  return data.map((n) => ({ ...n, time: new Date(n.created_at).toLocaleDateString() }));
+  return data.map((n) => ({ ...n, linkUrl: n.link_url || "", time: new Date(n.created_at).toLocaleDateString() }));
 }
 
 export async function markNotificationsRead(userId, ids) {

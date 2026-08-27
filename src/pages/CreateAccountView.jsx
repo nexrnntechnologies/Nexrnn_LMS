@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import Logo from "../components/Logo.jsx";
 import { BLUE } from "../theme";
@@ -7,9 +7,13 @@ import { BLUE } from "../theme";
 export default function CreateAccountView() {
   const { signUp, isSupabaseConfigured } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnPath = location.state?.from || "/my-courses";
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [mobile, setMobile] = useState("");
+  const [gender, setGender] = useState("");
+  const [city, setCity] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -30,6 +34,14 @@ export default function CreateAccountView() {
       setError("Please enter a valid 10-digit mobile number.");
       return;
     }
+    if (!gender) {
+      setError("Please select your gender.");
+      return;
+    }
+    if (!city.trim()) {
+      setError("Please enter your city.");
+      return;
+    }
     if (password !== confirmPassword) {
       setError("Passwords don't match.");
       return;
@@ -44,6 +56,8 @@ export default function CreateAccountView() {
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       phone: mobile.trim(),
+      gender,
+      city: city.trim(),
     });
     setSubmitting(false);
 
@@ -53,7 +67,7 @@ export default function CreateAccountView() {
     }
 
     if (data?.session) {
-      navigate("/my-courses");
+      navigate(returnPath, { replace: true });
     } else {
       setInfo("Account created — check your email to confirm, then sign in.");
       setTimeout(() => navigate("/login"), 1500);
@@ -109,6 +123,23 @@ export default function CreateAccountView() {
               />
             </label>
 
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="text-[13px] font-semibold text-slate-600 mb-1 block">Gender</span>
+                <select required value={gender} onChange={(e) => setGender(e.target.value)} className="w-full px-3 py-2.5 text-sm rounded-md border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
+                  <option value="">Select gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                  <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-[13px] font-semibold text-slate-600 mb-1 block">City</span>
+                <input required value={city} onChange={(e) => setCity(e.target.value)} placeholder="Your city" className="w-full px-3 py-2.5 text-sm rounded-md border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+              </label>
+            </div>
+
             <label className="block">
               <span className="text-[13px] font-semibold text-slate-600 mb-1 block">Email</span>
               <input
@@ -155,7 +186,7 @@ export default function CreateAccountView() {
 
           <p className="text-center text-sm mt-5 text-slate-500">
             Already have an account?{" "}
-            <Link to="/login" className="font-semibold hover:underline" style={{ color: BLUE }}>
+            <Link to="/login" state={{ from: returnPath }} className="font-semibold hover:underline" style={{ color: BLUE }}>
               Sign in
             </Link>
           </p>

@@ -1,0 +1,58 @@
+import React, { useEffect, useState } from "react";
+import { ArrowRight, CheckCircle2, Mail, MessageSquare, Search, ShieldCheck, Send } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import Logo from "../components/Logo.jsx";
+import { fetchCourses, fetchCourseRatings } from "../services/courses.js";
+import LearnerFeedbackSlider from "../components/LearnerFeedbackSlider.jsx";
+import { createContactQuery } from "../services/contactQueries.js";
+import { BLUE, NAVY } from "../theme";
+
+const EMPTY_QUERY = { name: "", mobile: "", email: "", message: "" };
+const inputClass = "w-full px-3 py-2.5 text-sm rounded-md border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400";
+
+export default function LandingView() {
+  const navigate = useNavigate();
+  const [courses, setCourses] = useState([]);
+  const [courseRatings, setCourseRatings] = useState([]);
+  const [certificateId, setCertificateId] = useState("");
+  const [queryForm, setQueryForm] = useState(EMPTY_QUERY);
+  const [queryStatus, setQueryStatus] = useState("");
+  const [queryError, setQueryError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetchCourses().then(setCourses);
+    fetchCourseRatings().then(setCourseRatings);
+  }, []);
+  const setQueryField = (field) => (event) => setQueryForm((current) => ({ ...current, [field]: event.target.value }));
+  const verify = (event) => { event.preventDefault(); navigate(`/verify-certificate?id=${encodeURIComponent(certificateId.trim())}`); };
+  const submitQuery = async (event) => {
+    event.preventDefault(); setQueryStatus(""); setQueryError("");
+    if (!/^\d{10}$/.test(queryForm.mobile.replace(/\D/g, ""))) { setQueryError("Please enter a valid 10-digit mobile number."); return; }
+    setSubmitting(true);
+    const { error } = await createContactQuery(null, queryForm);
+    setSubmitting(false);
+    if (error) { setQueryError(error.message); return; }
+    setQueryStatus("Thank you. Your query has been sent to Nexrnn Technologies. Our team will contact you by email.");
+    setQueryForm(EMPTY_QUERY);
+  };
+
+  return <div className="min-h-screen bg-slate-50 text-slate-900">
+    <header className="bg-white border-b border-slate-200"><div className="max-w-7xl mx-auto px-6 h-[72px] flex items-center justify-between gap-5"><Logo /><div className="flex items-center gap-3"><a href="#courses" className="hidden sm:block text-sm font-semibold text-slate-600 hover:text-slate-900">Courses</a><a href="#contact" className="hidden sm:block text-sm font-semibold text-slate-600 hover:text-slate-900">Contact us</a><form onSubmit={verify} className="hidden md:flex items-center gap-2"><div className="relative"><ShieldCheck size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={certificateId} onChange={(event) => setCertificateId(event.target.value)} placeholder="Verify Certificate ID" className="w-48 pl-9 pr-3 py-2 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400" /></div><button type="submit" className="text-xs font-bold px-3 py-2 rounded-md text-white" style={{ backgroundColor: BLUE }}>Verify</button></form><button onClick={() => navigate("/login")} className="text-sm font-semibold text-slate-600 hover:text-slate-900">Log in</button><button onClick={() => navigate("/createaccount")} className="text-sm font-bold text-white px-3 py-2 rounded-md hover:opacity-90" style={{ backgroundColor: BLUE }}>Create account</button></div></div></header>
+
+    <main>
+      <section className="relative overflow-hidden" style={{ backgroundColor: NAVY }}><div className="max-w-7xl mx-auto px-6 py-20 md:py-28 grid lg:grid-cols-[1.2fr_0.8fr] items-center gap-12"><div><p className="text-xs font-bold tracking-[0.25em] uppercase mb-4" style={{ color: "#8db4ff" }}>Nexrnn Technologies</p><h1 className="text-4xl md:text-6xl font-extrabold text-white leading-tight">NexRNN LMS Portal</h1><p className="text-lg text-slate-300 max-w-xl mt-6 leading-relaxed">Learn practical skills, explore every course openly, and build your next opportunity with Nexrnn Technologies.</p><div className="flex flex-wrap gap-3 mt-8"><button onClick={() => navigate("/courses")} className="flex items-center gap-2 text-sm font-bold text-white px-5 py-3 rounded-md hover:opacity-90" style={{ backgroundColor: BLUE }}>Explore all courses <ArrowRight size={16} /></button><a href="#verify" className="flex items-center gap-2 text-sm font-bold text-white border border-white/25 px-5 py-3 rounded-md hover:bg-white/10"><ShieldCheck size={16} /> Verify a certificate</a></div></div><div id="verify" className="bg-white rounded-2xl p-7 shadow-2xl"><div className="w-12 h-12 rounded-xl flex items-center justify-center mb-5" style={{ backgroundColor: "#eef5ff", color: BLUE }}><ShieldCheck size={25} /></div><h2 className="text-xl font-extrabold text-slate-900">Verify Certificate ID</h2><p className="text-sm text-slate-500 mt-2 mb-5">Check whether a Nexrnn Technologies certificate is genuine.</p><form onSubmit={verify} className="space-y-3"><input required value={certificateId} onChange={(event) => setCertificateId(event.target.value)} placeholder="Example: NXR-ABC123-XYZ789" className={inputClass} /><button type="submit" className="w-full text-white font-bold py-2.5 rounded-md" style={{ backgroundColor: BLUE }}>Verify Certificate</button></form><p className="text-xs text-slate-400 mt-4">Enter the Certificate ID printed on the certificate.</p></div></div></section>
+
+      <section id="courses" className="max-w-7xl mx-auto px-6 py-16"><div className="flex items-end justify-between gap-4 mb-7"><div><p className="text-xs font-bold tracking-[0.2em] text-slate-400 uppercase mb-2">Start learning</p><h2 className="text-2xl font-extrabold">Explore our courses</h2><p className="text-sm text-slate-500 mt-2">Course details and previews are open. Login is required only when you enroll.</p></div><button onClick={() => navigate("/courses")} className="hidden sm:flex items-center gap-1 text-sm font-bold hover:underline" style={{ color: BLUE }}>View all <ArrowRight size={15} /></button></div><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">{courses.slice(0, 4).map((course) => { const Icon = course.icon; return <article key={course.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition"><div className="p-5" style={{ backgroundColor: NAVY }}><div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: BLUE }}><Icon size={18} className="text-white" /></div></div><div className="p-5"><p className="text-[10px] font-bold tracking-wide" style={{ color: BLUE }}>{course.tag}</p><h3 className="font-extrabold text-slate-900 mt-1">{course.title}</h3><p className="text-sm text-slate-500 mt-2 line-clamp-2">{course.desc}</p><button onClick={() => navigate(`/courses/${course.id}`)} className="flex items-center gap-1 text-sm font-bold mt-4 hover:underline" style={{ color: BLUE }}>View course <ArrowRight size={14} /></button></div></article>; })}{!courses.length && <p className="text-sm text-slate-400">Loading courses…</p>}</div></section>
+
+      <section className="max-w-7xl mx-auto px-6"><LearnerFeedbackSlider ratings={courseRatings} /></section>
+
+      <section className="bg-white border-y border-slate-200"><div className="max-w-7xl mx-auto px-6 py-14 grid md:grid-cols-3 gap-8"><Benefit title="Open course discovery" text="Browse course details, curriculum and free preview lessons before you decide." /><Benefit title="Learn with confidence" text="Track your progress and earn a verified certificate after completing a course." /><Benefit title="Support when needed" text="Create an account to access your student dashboard, community and support." /></div></section>
+
+      <section id="contact" className="max-w-7xl mx-auto px-6 py-16"><div className="grid lg:grid-cols-[0.8fr_1.2fr] gap-10 items-start"><div><p className="text-xs font-bold tracking-[0.2em] text-slate-400 uppercase mb-2">Contact us</p><h2 className="text-3xl font-extrabold text-slate-900">Have a query?</h2><p className="text-slate-500 mt-4 leading-relaxed max-w-md">Send your name, number, email and message. The Nexrnn team will review it in the admin panel and contact you directly by email.</p><a href="mailto:nexrnntechnologies@gmail.com" className="inline-flex items-center gap-2 text-sm font-semibold mt-5 hover:underline" style={{ color: BLUE }}><Mail size={16} /> nexrnntechnologies@gmail.com</a></div><form onSubmit={submitQuery} className="bg-white border border-slate-200 rounded-2xl p-7 shadow-sm"><div className="flex items-center gap-2 mb-5"><MessageSquare size={19} style={{ color: BLUE }} /><div><h3 className="font-extrabold text-slate-900">Query / Contact us</h3><p className="text-xs text-slate-500 mt-1">No account is required to send a query.</p></div></div><div className="grid sm:grid-cols-2 gap-4"><label><span className="text-[13px] font-semibold text-slate-600 mb-1 block">Name</span><input required value={queryForm.name} onChange={setQueryField("name")} className={inputClass} /></label><label><span className="text-[13px] font-semibold text-slate-600 mb-1 block">Mobile number</span><input required inputMode="numeric" maxLength={10} value={queryForm.mobile} onChange={setQueryField("mobile")} className={inputClass} /></label><label><span className="text-[13px] font-semibold text-slate-600 mb-1 block">Email address</span><input required type="email" value={queryForm.email} onChange={setQueryField("email")} className={inputClass} /></label><label className="sm:col-span-2"><span className="text-[13px] font-semibold text-slate-600 mb-1 block">Message</span><textarea required rows={5} value={queryForm.message} onChange={setQueryField("message")} placeholder="Write your question…" className={inputClass} /></label></div>{queryError && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2 mt-4">{queryError}</p>}{queryStatus && <p className="text-sm text-green-700 bg-green-50 border border-green-100 rounded-md px-3 py-2 mt-4 flex items-start gap-2"><CheckCircle2 size={16} className="shrink-0 mt-0.5" /> {queryStatus}</p>}<button type="submit" disabled={submitting} className="mt-5 flex items-center gap-2 text-white font-bold px-5 py-3 rounded-md disabled:opacity-50" style={{ backgroundColor: NAVY }}><Send size={15} /> {submitting ? "Sending…" : "Send Query"}</button></form></div></section>
+    </main>
+    <footer className="bg-slate-950 text-slate-400"><div className="max-w-7xl mx-auto px-6 py-7 flex flex-wrap items-center justify-between gap-3 text-xs"><span>© {new Date().getFullYear()} Nexrnn Technologies</span><span>NexRNN LMS Portal</span></div></footer>
+  </div>;
+}
+
+function Benefit({ title, text }) { return <div className="flex gap-3"><CheckCircle2 size={20} style={{ color: BLUE }} className="shrink-0" /><div><h3 className="font-bold text-slate-900">{title}</h3><p className="text-sm text-slate-500 mt-1 leading-relaxed">{text}</p></div></div>; }

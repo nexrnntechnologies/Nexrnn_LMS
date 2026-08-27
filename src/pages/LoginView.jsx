@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import Logo from "../components/Logo.jsx";
 import { BLUE } from "../theme";
@@ -7,6 +7,8 @@ import { BLUE } from "../theme";
 export default function LoginView() {
   const { signIn, resetPassword, isSupabaseConfigured } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnPath = location.state?.from || "/my-courses";
   const [mode, setMode] = useState("signin"); // "signin" | "forgot"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,7 +26,7 @@ export default function LoginView() {
       setError(error.message);
       return;
     }
-    navigate("/my-courses");
+    navigate(returnPath, { replace: true });
   };
 
   const handleForgotPassword = async (e) => {
@@ -105,7 +107,7 @@ export default function LoginView() {
 
               <p className="text-center text-sm mt-5 text-slate-500">
                 Don't have an account?{" "}
-                <Link to="/createaccount" className="font-semibold hover:underline" style={{ color: BLUE }}>
+                <Link to="/createaccount" state={{ from: returnPath }} className="font-semibold hover:underline" style={{ color: BLUE }}>
                   Create one
                 </Link>
               </p>

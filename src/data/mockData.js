@@ -12,6 +12,7 @@ export const COURSES = [
     mode: "Online",
     projects: 0,
     certificate: true,
+    courseComplete: false,
     mentorship: false,
     price: 10,
     originalPrice: 100,
@@ -34,6 +35,7 @@ export const COURSES = [
     mode: "Online / Offline (Lucknow)",
     projects: 4,
     certificate: true,
+    courseComplete: true,
     mentorship: true,
     price: 4999,
     originalPrice: 9999,
@@ -72,6 +74,7 @@ export const COURSES = [
     mode: "Online",
     projects: 3,
     certificate: true,
+    courseComplete: false,
     mentorship: false,
     price: 3999,
     originalPrice: 7999,
@@ -99,6 +102,7 @@ export const COURSES = [
     mode: "Online / Offline (Lucknow)",
     projects: 6,
     certificate: true,
+    courseComplete: false,
     mentorship: true,
     price: 5999,
     originalPrice: 11999,
@@ -204,6 +208,12 @@ export const CURRICULUM_BY_COURSE = {
     },
   ],
 };
+
+export const INITIAL_LEARNER_FEEDBACK = [
+  { id: "demo-feedback-1", user_id: "learner-1", course_id: "digital-marketing", courseTitle: "Digital Marketing", stars: 5, comment: "The practical campaign exercises made it easy to apply what I learned immediately.", created_at: "2026-07-18T10:00:00.000Z" },
+  { id: "demo-feedback-2", user_id: "learner-2", course_id: "artificial-intelligence", courseTitle: "Artificial Intelligence", stars: 5, comment: "Clear explanations, useful prompts and projects that I could add to my portfolio.", created_at: "2026-07-10T10:00:00.000Z" },
+  { id: "demo-feedback-3", user_id: "learner-3", course_id: "web-development", courseTitle: "Web Development", stars: 4, comment: "A helpful learning path from fundamentals to building and deploying a real website.", created_at: "2026-06-28T10:00:00.000Z" },
+];
 
 export const INITIAL_NOTIFICATIONS = [
   { id: 1, text: "posted in Nexrnn Digital Marketing — Community", detail: "Assignment: Keyword Research Sheet", time: "3 weeks ago", read: false },

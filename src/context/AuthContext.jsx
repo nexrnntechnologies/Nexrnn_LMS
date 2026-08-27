@@ -12,6 +12,12 @@ export function AuthProvider({ children }) {
     if (!userId) { setProfile(null); return; }
     const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
     setProfile(data || null);
+    return data || null;
+  };
+
+  const refreshProfile = async () => {
+    if (!user?.id) return null;
+    return loadProfile(user.id);
   };
 
   useEffect(() => {
@@ -62,7 +68,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, profile, loading, signUp, signIn, signOut, resetPassword, isAdmin, isSupabaseConfigured }}
+      value={{ user, profile, loading, signUp, signIn, signOut, resetPassword, refreshProfile, isAdmin, isSupabaseConfigured }}
     >
       {children}
     </AuthContext.Provider>

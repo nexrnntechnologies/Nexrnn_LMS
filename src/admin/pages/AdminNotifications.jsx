@@ -9,6 +9,7 @@ export default function AdminNotifications() {
   const [courseId, setCourseId] = useState("");
   const [text, setText] = useState("");
   const [detail, setDetail] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -25,10 +26,11 @@ export default function AdminNotifications() {
       courseId: audience === "course" ? courseId : null,
       text,
       detail,
+      linkUrl,
     });
     setSubmitting(false);
     setMessage(error ? error.message : "Notification sent.");
-    if (!error) { setText(""); setDetail(""); }
+    if (!error) { setText(""); setDetail(""); setLinkUrl(""); }
   };
 
   return (
@@ -82,6 +84,18 @@ export default function AdminNotifications() {
             onChange={(e) => setDetail(e.target.value)}
             className="w-full px-3 py-2.5 text-sm rounded-md border border-slate-200"
           />
+        </label>
+
+        <label className="block">
+          <span className="text-[13px] font-semibold text-slate-600 mb-1 block">Redirect link (optional)</span>
+          <input
+            type="url"
+            value={linkUrl}
+            onChange={(e) => setLinkUrl(e.target.value)}
+            placeholder="https://youtube.com/... or https://example.com/..."
+            className="w-full px-3 py-2.5 text-sm rounded-md border border-slate-200"
+          />
+          <span className="text-[11px] text-slate-400 mt-1 block">Clicking this notification opens the link in a new tab.</span>
         </label>
 
         {message && <p className="text-sm text-slate-600">{message}</p>}

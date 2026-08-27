@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ShieldCheck } from "lucide-react";
 import { useAuth } from "../../context/AuthContext.jsx";
+import { supabase } from "../../lib/supabaseClient";
 import { NAVY, BLUE } from "../../theme";
 
 export default function AdminLogin() {
@@ -31,21 +32,18 @@ export default function AdminLogin() {
     }
 
     // Give the AuthContext a moment to load the profile, then check role.
-    setTimeout(async () => {
-      const { supabase } = await import("../../lib/supabaseClient");
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", data.user.id)
-        .single();
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", data.user.id)
+      .single();
 
-      if (profile?.role !== "admin") {
-        setError("This account doesn't have admin access.");
-        await signOut();
-        return;
-      }
-      navigate("/nexrnn/master_nexrnn/admin");
-    }, 300);
+    if (profile?.role !== "admin") {
+      setError("This account doesn't have admin access.");
+      await signOut();
+      return;
+    }
+    navigate("/nexrnn/master_nexrnn/admin");
   };
 
   return (

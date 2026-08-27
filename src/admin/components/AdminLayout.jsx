@@ -1,6 +1,6 @@
 import React from "react";
 import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LayoutDashboard, BookOpen, Users, LogOut, ShieldCheck, MessageSquare, Bell } from "lucide-react";
+import { LayoutDashboard, BookOpen, Users, LogOut, ShieldCheck, MessageSquare, Bell, Star, Award, GraduationCap } from "lucide-react";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { NAVY, BLUE } from "../../theme";
 
@@ -33,9 +33,14 @@ export default function AdminLayout() {
   const navItems = [
     { to: ADMIN_BASE, label: "Overview", icon: LayoutDashboard, end: true },
     { to: `${ADMIN_BASE}/courses`, label: "Courses", icon: BookOpen },
-    { to: `${ADMIN_BASE}/users`, label: "Users", icon: Users },
+    { to: `${ADMIN_BASE}/enrollments`, label: "Course Enrollments", icon: GraduationCap },
+    { to: `${ADMIN_BASE}/certificates`, label: "Issued Certificates", icon: Award },
+    { to: `${ADMIN_BASE}/users`, label: "Registered Users", icon: Users },
     { to: `${ADMIN_BASE}/communities`, label: "Communities", icon: MessageSquare },
     { to: `${ADMIN_BASE}/notifications`, label: "Notifications", icon: Bell },
+    { to: `${ADMIN_BASE}/support`, label: "Support", icon: MessageSquare },
+    { to: `${ADMIN_BASE}/queries`, label: "Queries", icon: MessageSquare },
+    { to: `${ADMIN_BASE}/course-feedback`, label: "Course Feedback", icon: Star },
   ];
 
   const handleSignOut = async () => {
@@ -44,8 +49,8 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen flex bg-slate-50">
-      <aside className="w-60 shrink-0 text-white flex flex-col" style={{ backgroundColor: NAVY }}>
+    <div className="h-screen flex overflow-hidden bg-slate-50">
+      <aside className="w-60 h-screen shrink-0 sticky top-0 text-white flex flex-col overflow-y-auto" style={{ backgroundColor: NAVY }}>
         <div className="px-5 py-6 flex items-center gap-2">
           <ShieldCheck size={20} style={{ color: BLUE }} />
           <span className="font-extrabold text-sm">NEXRNN ADMIN</span>
@@ -80,7 +85,7 @@ export default function AdminLayout() {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 min-w-0 h-screen overflow-y-auto">
         <Outlet />
       </main>
     </div>

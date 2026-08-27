@@ -1,9 +1,7 @@
 import { supabase, isSupabaseConfigured } from "../lib/supabaseClient";
-import { COURSES, MODULES } from "../data/mockData";
-
-// Maps DB icon name strings back to the lucide-react components already
-// used by the frontend, since icons can't be stored directly in Postgres.
+import { COURSES, MODULES, CURRICULUM_BY_COURSE, INITIAL_LEARNER_FEEDBACK } from "../data/mockData";
 import { Sparkles, Megaphone, BrainCircuit, BookOpen } from "lucide-react";
+
 const ICONS = {
   sparkles: Sparkles,
   megaphone: Megaphone,
@@ -13,6 +11,7 @@ const ICONS = {
 
 function mapDbCourse(row) {
   return {
+    ...row,
     id: row.id,
     icon: ICONS[row.icon] || Sparkles,
     tag: row.tag,
@@ -21,55 +20,72 @@ function mapDbCourse(row) {
     duration: row.duration,
     level: row.level,
     mode: row.mode,
-    projects: row.projects,
-    certificate: row.certificate,
-    mentorship: row.mentorship,
-    price: Number(row.price),
-    originalPrice: Number(row.original_price ?? row.price),
+    projects: Number(row.projects || 0),
+    certificate: row.certificate !== false,
+    courseComplete: row.course_complete === true,
+    mentorship: Boolean(row.mentorship),
+    price: Number(row.price || 0),
+    originalPrice: Number(row.original_price ?? row.price ?? 0),
     discount: row.discount_label,
-    rating: Number(row.rating),
-    reviews: row.reviews,
+    rating: Number(row.rating || 0),
+    reviews: Number(row.reviews || 0),
+    demoVideoUrl: row.demo_video_url || "",
     whatYoullLearn: row.what_you_learn || [],
     whoShouldTake: row.who_should_take || [],
     faqs: row.faqs || [],
   };
 }
 
+function mapLesson(row) {
+  return {
+    id: row.id,
+    title: row.title,
+    type: row.type,
+    duration: row.duration,
+    freePreview: Boolean(row.free_preview),
+    videoUrl: row.video_url || "",
+    pdfUrl: row.pdf_url || "",
+    content: row.content || "",
+    done: false,
+    resources: (row.lesson_resources || []).sort((a, b) => a.position - b.position).map((resource) => ({
+      id: resource.id,
+      label: resource.label,
+      url: resource.url,
+    })),
+  };
+}
+
 export async function fetchCourses() {
   if (!isSupabaseConfigured) return COURSES;
   const { data, error } = await supabase.from("courses").select("*").order("created_at");
-  if (error || !data?.length) return COURSES;
-  return data.map(mapDbCourse);
+  if (error) {
+    console.error("fetchCourses failed", error);
+    return [];
+  }
+  return (data || []).map(mapDbCourse);
 }
 
 export async function fetchCourseCurriculum(courseId) {
-  if (!isSupabaseConfigured) return MODULES;
-  const { data: modules, error: mErr } = await supabase
+  if (!isSupabaseConfigured) return CURRICULUM_BY_COURSE[courseId] || MODULES;
+  const { data: modules, error } = await supabase
     .from("modules")
-    .select("id, title, position, lessons(id, title, type, duration, position, free_preview, video_url)")
+    .select("id, title, position, lessons(id, title, type, duration, position, free_preview, video_url, pdf_url, content, lesson_resources(id, label, url, position))")
     .eq("course_id", courseId)
     .order("position");
-  if (mErr || !modules?.length) return MODULES;
-  return modules.map((m) => ({
-    id: m.id,
-    title: m.title,
-    lessons: (m.lessons || [])
-      .sort((a, b) => a.position - b.position)
-      .map((l) => ({
-        id: l.id,
-        title: l.title,
-        type: l.type,
-        duration: l.duration,
-        freePreview: l.free_preview,
-        videoUrl: l.video_url,
-        done: false,
-      })),
+  if (error) {
+    console.error("fetchCourseCurriculum failed", error);
+    return [];
+  }
+  return (modules || []).map((module) => ({
+    id: module.id,
+    title: module.title,
+    lessons: (module.lessons || []).sort((a, b) => a.position - b.position).map(mapLesson),
   }));
 }
 
 export async function enrollInCourse(userId, courseId, details = {}) {
   if (!isSupabaseConfigured) return { error: null };
-  return supabase.from("enrollments").insert({
+  return supabase.from("enrollments").upsert({
     user_id: userId,
     course_id: courseId,
     full_name: details.fullName,
@@ -77,18 +93,16 @@ export async function enrollInCourse(userId, courseId, details = {}) {
     email: details.email,
     payment_ref: details.paymentRef || null,
     status: details.status || "free",
-  });
+  }, { onConflict: "user_id,course_id", ignoreDuplicates: true });
 }
 
 export async function fetchEnrollments(userId) {
   if (!isSupabaseConfigured) return [];
   const { data, error } = await supabase.from("enrollments").select("course_id").eq("user_id", userId);
   if (error) return [];
-  return data.map((r) => r.course_id);
+  return (data || []).map((row) => row.course_id);
 }
 
-// Fetches the signed-in user's enrolled courses with real progress
-// (lessons marked done / total lessons for that course).
 export async function fetchMyCourses(userId) {
   if (!isSupabaseConfigured) return [];
 
@@ -99,22 +113,16 @@ export async function fetchMyCourses(userId) {
     ]);
 
     if (enrollError) {
-      console.error("fetchMyCourses: enrollments error", enrollError);
+      console.error("fetchMyCourses enrollments error", enrollError);
       return [];
     }
 
-    const courseIds = (enrollments || []).map((e) => e.course_id);
+    const courseIds = (enrollments || []).map((enrollment) => enrollment.course_id);
     if (!courseIds.length) return [];
 
-    // Two simple queries instead of one fragile embedded-table filter,
-    // so a schema quirk in one doesn't silently break the whole page.
-    const { data: modules } = await supabase
-      .from("modules")
-      .select("id, course_id")
-      .in("course_id", courseIds);
-
-    const moduleIds = (modules || []).map((m) => m.id);
-    const moduleCourseMap = Object.fromEntries((modules || []).map((m) => [m.id, m.course_id]));
+    const { data: modules } = await supabase.from("modules").select("id, course_id").in("course_id", courseIds);
+    const moduleIds = (modules || []).map((module) => module.id);
+    const moduleCourseMap = Object.fromEntries((modules || []).map((module) => [module.id, module.course_id]));
 
     let lessons = [];
     if (moduleIds.length) {
@@ -123,7 +131,7 @@ export async function fetchMyCourses(userId) {
     }
 
     let doneLessonIds = new Set();
-    const lessonIds = lessons.map((l) => l.id);
+    const lessonIds = lessons.map((lesson) => lesson.id);
     if (lessonIds.length) {
       const { data: progress } = await supabase
         .from("lesson_progress")
@@ -131,47 +139,72 @@ export async function fetchMyCourses(userId) {
         .eq("user_id", userId)
         .eq("done", true)
         .in("lesson_id", lessonIds);
-      doneLessonIds = new Set((progress || []).map((p) => p.lesson_id));
+      doneLessonIds = new Set((progress || []).map((item) => item.lesson_id));
     }
 
-    return courseIds
-      .map((id) => {
-        const course = courses.find((c) => c.id === id);
-        if (!course) return null;
-        const courseLessons = lessons.filter((l) => moduleCourseMap[l.module_id] === id);
-        const total = courseLessons.length;
-        const done = courseLessons.filter((l) => doneLessonIds.has(l.id)).length;
-        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-        return { ...course, progress: pct };
-      })
-      .filter(Boolean);
-  } catch (err) {
-    console.error("fetchMyCourses failed", err);
+    return courseIds.map((id) => {
+      const course = courses.find((item) => item.id === id);
+      if (!course) return null;
+      const courseLessons = lessons.filter((lesson) => moduleCourseMap[lesson.module_id] === id);
+      const total = courseLessons.length;
+      const done = courseLessons.filter((lesson) => doneLessonIds.has(lesson.id)).length;
+      return { ...course, progress: total ? Math.round((done / total) * 100) : 0 };
+    }).filter(Boolean);
+  } catch (error) {
+    console.error("fetchMyCourses failed", error);
     return [];
   }
 }
 
+export function getDemoCourseRatings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("nexrnn_demo_feedback") || "[]");
+    const savedKeys = new Set(saved.map((rating) => `${rating.user_id}:${rating.course_id}`));
+    return [...saved, ...INITIAL_LEARNER_FEEDBACK.filter((rating) => !savedKeys.has(`${rating.user_id}:${rating.course_id}`))];
+  } catch {
+    return INITIAL_LEARNER_FEEDBACK;
+  }
+}
+
+export async function fetchCourseRatings() {
+  if (!isSupabaseConfigured) return getDemoCourseRatings();
+  const { data, error } = await supabase
+    .from("course_ratings")
+    .select("id, course_id, stars, comment, created_at, courses(title)")
+    .order("created_at", { ascending: false });
+  if (error) return [];
+  return (data || []).map((rating) => ({
+    ...rating,
+    courseTitle: rating.courses?.title || rating.course_id,
+  }));
+}
+
 export async function submitRating(userId, courseId, stars, comment) {
   if (!isSupabaseConfigured) return { error: { message: "Supabase not configured yet." } };
-  return supabase
+  const { data: existing, error: lookupError } = await supabase
     .from("course_ratings")
-    .upsert({ user_id: userId, course_id: courseId, stars, comment }, { onConflict: "user_id,course_id" });
+    .select("id")
+    .eq("user_id", userId)
+    .eq("course_id", courseId)
+    .maybeSingle();
+  if (lookupError) return { error: lookupError };
+  if (existing) return { error: { message: "You have already rated this course. Each course can be rated only once." } };
+  return supabase.from("course_ratings").insert({ user_id: userId, course_id: courseId, stars, comment });
 }
 
 export async function markLessonDone(userId, lessonId) {
   if (!isSupabaseConfigured) return { error: null };
-  return supabase
-    .from("lesson_progress")
-    .upsert({ user_id: userId, lesson_id: lessonId, done: true }, { onConflict: "user_id,lesson_id" });
+  return supabase.from("lesson_progress").upsert(
+    { user_id: userId, lesson_id: lessonId, done: true, updated_at: new Date().toISOString() },
+    { onConflict: "user_id,lesson_id" }
+  );
 }
 
-// Curriculum for a course, with each lesson's `done` flag filled in for the
-// given user (used by the course player, which needs live progress).
 export async function fetchCourseCurriculumWithProgress(courseId, userId) {
   const curriculum = await fetchCourseCurriculum(courseId);
   if (!isSupabaseConfigured || !userId) return curriculum;
 
-  const lessonIds = curriculum.flatMap((m) => m.lessons.map((l) => l.id));
+  const lessonIds = curriculum.flatMap((module) => module.lessons.map((lesson) => lesson.id));
   if (!lessonIds.length) return curriculum;
 
   const { data: progress } = await supabase
@@ -180,10 +213,9 @@ export async function fetchCourseCurriculumWithProgress(courseId, userId) {
     .eq("user_id", userId)
     .eq("done", true)
     .in("lesson_id", lessonIds);
-
-  const doneIds = new Set((progress || []).map((p) => p.lesson_id));
-  return curriculum.map((m) => ({
-    ...m,
-    lessons: m.lessons.map((l) => ({ ...l, done: doneIds.has(l.id) })),
+  const doneIds = new Set((progress || []).map((item) => item.lesson_id));
+  return curriculum.map((module) => ({
+    ...module,
+    lessons: module.lessons.map((lesson) => ({ ...lesson, done: doneIds.has(lesson.id) })),
   }));
 }

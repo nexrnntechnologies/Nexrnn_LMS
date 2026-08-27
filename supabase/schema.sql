@@ -19,6 +19,7 @@ create table if not exists profiles (
   professional_title text,
   timezone text,
   city text,
+  gender text check (gender is null or gender in ('male', 'female', 'other', 'prefer_not_to_say')),
   phone text,
   avatar_url text,
   role text default 'student' check (role in ('student', 'admin')),
@@ -42,8 +43,16 @@ create policy "Users can insert their own profile"
 create or replace function handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, email)
-  values (new.id, new.email);
+  insert into public.profiles (id, email, first_name, last_name, phone, gender, city)
+  values (
+    new.id,
+    new.email,
+    new.raw_user_meta_data->>'first_name',
+    new.raw_user_meta_data->>'last_name',
+    new.raw_user_meta_data->>'phone',
+    new.raw_user_meta_data->>'gender',
+    new.raw_user_meta_data->>'city'
+  );
   return new;
 end;
 $$ language plpgsql security definer;
@@ -66,6 +75,7 @@ create table if not exists courses (
   mode text,
   projects int default 0,
   certificate boolean default true,
+  course_complete boolean not null default false,
   mentorship boolean default false,
   price numeric not null default 0,
   original_price numeric,
@@ -165,7 +175,7 @@ create policy "Users can update their own progress"
   on lesson_progress for update using (auth.uid() = user_id);
 
 -- ---------------------------------------------------------
--- COURSE RATINGS  (stars + comment, for "Rate This Course")
+-- COURSE RATINGS  (one star rating + comment per completed course)
 -- ---------------------------------------------------------
 create table if not exists course_ratings (
   id uuid primary key default gen_random_uuid(),
@@ -182,8 +192,8 @@ create policy "Ratings are publicly readable"
   on course_ratings for select using (true);
 create policy "Users can rate courses they're enrolled in"
   on course_ratings for insert with check (auth.uid() = user_id);
-create policy "Users can update their own rating"
-  on course_ratings for update using (auth.uid() = user_id);
+-- Ratings are intentionally insert-only; the unique (user_id, course_id)
+-- constraint makes each learner's rating one-time per course.
 
 -- ---------------------------------------------------------
 -- NOTIFICATIONS

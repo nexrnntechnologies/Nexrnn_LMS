@@ -1,0 +1,38 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { GraduationCap, Search } from "lucide-react";
+import { adminFetchCourseEnrollments } from "../../services/admin.js";
+import { BLUE } from "../../theme";
+
+export default function AdminEnrollments() {
+  const [enrollments, setEnrollments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("all");
+  const [selected, setSelected] = useState(null);
+
+  useEffect(() => {
+    adminFetchCourseEnrollments().then(({ data, error: loadError }) => { setEnrollments(data || []); setError(loadError?.message || ""); setLoading(false); });
+  }, []);
+
+  const visible = useMemo(() => {
+    const search = query.trim().toLowerCase();
+    return enrollments.filter((enrollment) => {
+      const profile = enrollment.profile || {};
+      const name = [profile.first_name, profile.last_name].filter(Boolean).join(" ");
+      const haystack = [name, profile.user_registration_id, profile.email, profile.phone, enrollment.email, enrollment.mobile, enrollment.courseTitle, enrollment.course_id, enrollment.payment_ref, enrollment.certificateId].filter(Boolean).join(" ").toLowerCase();
+      return (!search || haystack.includes(search)) && (status === "all" || (enrollment.status || "free") === status);
+    });
+  }, [enrollments, query, status]);
+
+  return <div className="max-w-7xl mx-auto px-8 py-10">
+    <div className="flex items-center justify-between gap-4 mb-6"><div><p className="text-xs font-bold tracking-[0.2em] text-slate-400 uppercase mb-2">Course activity</p><h1 className="text-2xl font-extrabold text-slate-900">Course Enrollments</h1><p className="text-sm text-slate-500 mt-1">See which student joined which course, with date, contact and payment details.</p></div><span className="text-sm font-semibold text-slate-500">{visible.length} shown</span></div>
+    <div className="bg-white border border-slate-200 rounded-lg p-3 mb-5 grid grid-cols-1 md:grid-cols-[minmax(220px,1fr)_190px] gap-3 items-end"><label className="relative block"><span className="sr-only">Search enrollments</span><Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search student, email, phone, course…" className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400" /></label><label className="block"><span className="text-[10px] font-bold tracking-wide text-slate-400 uppercase block mb-1">Payment status</span><select value={status} onChange={(event) => setStatus(event.target.value)} className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-md bg-white"><option value="all">All statuses</option><option value="free">Free</option><option value="paid">Paid</option></select></label></div>
+    {error && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2 mb-4">{error}</p>}
+    {loading ? <p className="text-sm text-slate-400">Loading enrollments…</p> : visible.length === 0 ? <div className="bg-white border border-dashed border-slate-300 rounded-xl p-12 text-center"><GraduationCap size={30} className="mx-auto mb-3 text-slate-300" /><p className="font-semibold text-slate-700">{enrollments.length ? "No enrollments match these filters." : "No course enrollments yet."}</p></div> : <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm"><div className="overflow-x-auto"><table className="w-full text-sm min-w-[1050px]"><thead className="bg-slate-50 text-slate-500 text-left"><tr><th className="px-4 py-3 font-semibold">Date & time</th><th className="px-4 py-3 font-semibold">Student</th><th className="px-4 py-3 font-semibold">Course</th><th className="px-4 py-3 font-semibold">Contact</th><th className="px-4 py-3 font-semibold">Payment</th><th className="px-4 py-3"></th></tr></thead><tbody className="divide-y divide-slate-100">{visible.map((enrollment) => { const profile = enrollment.profile || {}; return <tr key={enrollment.id} className="hover:bg-slate-50"><td className="px-4 py-4 text-slate-500 whitespace-nowrap">{enrollment.enrolled_at ? new Date(enrollment.enrolled_at).toLocaleString() : "—"}</td><td className="px-4 py-4"><p className="font-semibold text-slate-800">{[profile.first_name, profile.last_name].filter(Boolean).join(" ") || enrollment.full_name || "Unnamed"}</p><p className="text-xs text-slate-500">{profile.email || enrollment.email}</p><p className="text-[11px] text-slate-400 mt-1">User ID: {profile.user_registration_id || "—"}</p></td><td className="px-4 py-4 font-semibold text-slate-700">{enrollment.courseTitle}</td><td className="px-4 py-4 text-slate-500">{profile.phone || enrollment.mobile || "—"}</td><td className="px-4 py-4"><span className={`text-[11px] font-bold px-2 py-1 rounded ${enrollment.status === "paid" ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-600"}`}>{enrollment.status || "free"}</span>{enrollment.payment_ref && <p className="text-[11px] text-slate-400 mt-1">Payment: {enrollment.payment_ref}</p>}{enrollment.certificateId && <p className="text-[11px] text-green-700 mt-1">Certificate: {enrollment.certificateId}</p>}</td><td className="px-4 py-4 text-right"><button onClick={() => setSelected(enrollment)} className="text-sm font-semibold hover:underline mr-3" style={{ color: BLUE }}>View</button><Link to={`/nexrnn/master_nexrnn/admin/users/${enrollment.user_id}`} className="text-sm font-semibold hover:underline" style={{ color: BLUE }}>User</Link></td></tr>; })}</tbody></table></div></div>}
+    {selected && <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4" onClick={() => setSelected(null)}><div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-7 relative" onClick={(event) => event.stopPropagation()}><button onClick={() => setSelected(null)} className="absolute top-4 right-4 text-slate-400 text-xl" aria-label="Close">×</button><p className="text-xs font-bold tracking-[0.2em] text-slate-400 uppercase mb-2">Enrollment detail</p><h2 className="text-xl font-extrabold text-slate-900 mb-5">{selected.courseTitle}</h2><div className="grid grid-cols-2 gap-3"><Info label="Student" value={[selected.profile?.first_name, selected.profile?.last_name].filter(Boolean).join(" ") || selected.full_name} /><Info label="User ID" value={selected.profile?.user_registration_id} /><Info label="Email" value={selected.profile?.email || selected.email} /><Info label="Mobile" value={selected.profile?.phone || selected.mobile} /><Info label="Enrolled" value={selected.enrolled_at ? new Date(selected.enrolled_at).toLocaleString() : "—"} /><Info label="Status" value={selected.status || "free"} /><Info label="Payment ID" value={selected.payment_ref || "Not applicable"} /><Info label="Certificate ID" value={selected.certificateId || "Not issued"} /></div><Link to={`/nexrnn/master_nexrnn/admin/users/${selected.user_id}`} onClick={() => setSelected(null)} className="inline-block mt-6 text-sm font-bold hover:underline" style={{ color: BLUE }}>View complete user record →</Link></div></div>}
+  </div>;
+}
+
+function Info({ label, value }) { return <div className="border border-slate-200 rounded-lg p-3"><p className="text-[10px] font-bold text-slate-400 uppercase mb-1">{label}</p><p className="text-sm font-semibold text-slate-800 break-words">{value || "—"}</p></div>; }

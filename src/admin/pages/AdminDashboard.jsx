@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { BookOpen, Users, GraduationCap } from "lucide-react";
-import { adminFetchCourses, adminFetchUsers, adminFetchEnrollmentCounts } from "../../services/admin.js";
+import { BookOpen, Users, GraduationCap, Eye } from "lucide-react";
+import { adminFetchCourses, adminFetchUsers, adminFetchEnrollmentCounts, adminFetchVisitStats } from "../../services/admin.js";
 import { BLUE } from "../../theme";
 
 function StatCard({ icon: Icon, label, value }) {
@@ -18,27 +18,31 @@ function StatCard({ icon: Icon, label, value }) {
 }
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({ courses: 0, users: 0, enrollments: 0 });
+  const [stats, setStats] = useState({ courses: 0, users: 0, enrollments: 0, visits: 0, visitors: 0 });
 
   useEffect(() => {
     (async () => {
-      const [{ data: courses }, { data: users }, { data: enrollments }] = await Promise.all([
+      const [{ data: courses }, { data: users }, { data: enrollments }, { data: visits }] = await Promise.all([
         adminFetchCourses(),
         adminFetchUsers(),
         adminFetchEnrollmentCounts(),
+        adminFetchVisitStats(),
       ]);
-      setStats({ courses: courses.length, users: users.length, enrollments: enrollments.length });
+      setStats({ courses: courses.length, users: users.length, enrollments: enrollments.length, visits: visits?.visits || 0, visitors: visits?.visitors || 0 });
     })();
   }, []);
 
   return (
     <div className="max-w-5xl mx-auto px-8 py-10">
       <h1 className="text-2xl font-extrabold text-slate-900 mb-8">Overview</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-5">
         <StatCard icon={BookOpen} label="Courses" value={stats.courses} />
         <StatCard icon={Users} label="Registered Users" value={stats.users} />
         <StatCard icon={GraduationCap} label="Total Enrollments" value={stats.enrollments} />
+        <StatCard icon={Eye} label="Website Visits" value={stats.visits} />
+        <StatCard icon={Users} label="Unique Visitors" value={stats.visitors} />
       </div>
+      <p className="text-xs text-slate-400 mt-4">Website visits are counted once per page per browser session. Admin-panel pages are excluded.</p>
     </div>
   );
 }

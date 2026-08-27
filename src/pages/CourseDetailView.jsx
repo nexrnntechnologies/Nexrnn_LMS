@@ -7,8 +7,10 @@ import {
 } from "lucide-react";
 import { NAVY, BLUE } from "../theme";
 import LockedContentModal from "../components/LockedContentModal.jsx";
+import LearnerFeedbackSlider from "../components/LearnerFeedbackSlider.jsx";
 import { CURRICULUM_BY_COURSE } from "../data/mockData";
 import { fetchCourseCurriculum } from "../services/courses.js";
+import { normalizeVideoUrl } from "../lib/media.js";
 
 function MetaBox({ icon: Icon, label, value }) {
   return (
@@ -26,9 +28,7 @@ function FaqItem({ faq, open, onToggle }) {
     <div className="border border-slate-200 rounded-lg overflow-hidden">
       <button
         onClick={onToggle}
-        className={`w-full flex items-center justify-between px-5 py-4 text-left font-bold text-slate-900 ${
-          open ? "bg-slate-50" : "bg-white"
-        }`}
+        className={`w-full flex items-center justify-between px-5 py-4 text-left font-bold text-slate-900 ${open ? "bg-slate-50" : "bg-white"}`}
       >
         {faq.q}
         {open ? <ChevronUp size={16} style={{ color: BLUE }} /> : <ChevronDown size={16} className="text-slate-400" />}
@@ -38,10 +38,17 @@ function FaqItem({ faq, open, onToggle }) {
   );
 }
 
+function DemoMedia({ url, title }) {
+  const media = normalizeVideoUrl(url);
+  if (media.kind === "iframe") return <div className="aspect-video rounded-lg overflow-hidden bg-black"><iframe src={media.src} title={title} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /></div>;
+  if (media.kind === "video") return <div className="aspect-video rounded-lg overflow-hidden bg-black"><video src={media.src} controls playsInline className="w-full h-full" /></div>;
+  return <div className="aspect-video rounded-lg flex flex-col items-center justify-center gap-3" style={{ backgroundColor: NAVY }}><div className="w-12 h-12 rounded-full border-2 border-white/40 flex items-center justify-center"><PlayCircle size={22} className="text-white/70" /></div><p className="text-white/70 text-sm font-semibold">Demo video coming soon</p></div>;
+}
+
 export default function CourseDetailView() {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { courses, enrolledIds, enrollCourse } = useOutletContext();
+  const { courses, coursesLoading, enrolledIds, enrollCourse, courseRatings = [] } = useOutletContext();
   const course = courses.find((c) => c.id === courseId);
   const enrolled = enrolledIds.includes(courseId);
 
@@ -57,12 +64,15 @@ export default function CourseDetailView() {
     });
   }, [courseId]);
 
-  if (!course) return null;
+  if (coursesLoading) return <div className="min-h-[calc(100vh-64px)] flex items-center justify-center text-sm text-slate-400">Loading course…</div>;
+  if (!course) return <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-6 text-center"><div><h1 className="text-2xl font-extrabold text-slate-900 mb-2">Course not found</h1><p className="text-sm text-slate-500 mb-5">This course may have been removed or the link is incorrect.</p><button onClick={() => navigate("/courses")} className="text-white font-semibold px-4 py-2.5 rounded-md" style={{ backgroundColor: BLUE }}>Browse Courses</button></div></div>;
   const Icon = course.icon;
 
   const handleLessonClick = (lesson) => {
-    if (enrolled || lesson.freePreview) {
+    if (enrolled) {
       navigate(`/my-courses/${course.id}?lesson=${lesson.id}`);
+    } else if (lesson.freePreview) {
+      navigate(`/my-courses/${course.id}?lesson=${lesson.id}&preview=1`);
     } else {
       setLockedModalOpen(true);
     }
@@ -120,7 +130,7 @@ export default function CourseDetailView() {
               <div className="space-y-2 mb-6">
                 {course.certificate && (
                   <div className="flex items-center gap-2 text-sm text-slate-700">
-                    <Award size={15} style={{ color: BLUE }} /> Certificate on completion
+                    <Award size={15} style={{ color: BLUE }} /> {course.courseComplete ? "Certificate on completion" : "Certificate after course completion"}
                   </div>
                 )}
                 {course.mentorship && (
@@ -147,12 +157,7 @@ export default function CourseDetailView() {
             <h2 className="font-extrabold text-slate-900 uppercase flex items-center gap-2 mb-4">
               <PlayCircle size={18} style={{ color: BLUE }} /> Course Demo Video
             </h2>
-            <div className="aspect-video rounded-lg flex flex-col items-center justify-center gap-3" style={{ backgroundColor: NAVY }}>
-              <div className="w-12 h-12 rounded-full border-2 border-white/40 flex items-center justify-center">
-                <PlayCircle size={22} className="text-white/70" />
-              </div>
-              <p className="text-white/70 text-sm font-semibold">Demo video coming soon</p>
-            </div>
+            <DemoMedia url={course.demoVideoUrl} title={`${course.title} demo video`} />
           </div>
 
           <div>
@@ -223,11 +228,9 @@ export default function CourseDetailView() {
                               <LType size={15} className="text-slate-400 shrink-0" />
                             )}
                             <span className="text-sm text-slate-700 flex-1">{l.title}</span>
-                            {l.freePreview && !enrolled && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ backgroundColor: "#FEF3C7", color: "#92400E" }}>
-                                FREE PREVIEW
-                              </span>
-                            )}
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${l.freePreview ? "bg-green-100 text-green-700" : "bg-slate-200 text-slate-600"}`}>
+                              {l.freePreview ? "FREE" : "PAID"}
+                            </span>
                             {l.duration && <span className="text-[11px] text-slate-400 shrink-0">{l.duration}</span>}
                           </button>
                         );
@@ -265,6 +268,8 @@ export default function CourseDetailView() {
             </div>
           </div>
         )}
+
+        <LearnerFeedbackSlider ratings={courseRatings} courseId={course.id} />
       </div>
 
       {lockedModalOpen && (
