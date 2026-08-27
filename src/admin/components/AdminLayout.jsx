@@ -1,6 +1,6 @@
 import React from "react";
 import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LayoutDashboard, BookOpen, Users, LogOut, ShieldCheck, MessageSquare, Bell, Star, Award, GraduationCap } from "lucide-react";
+import { LayoutDashboard, BookOpen, Users, LogOut, ShieldCheck, MessageSquare, Bell, Star, Award, GraduationCap, Menu, X } from "lucide-react";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { NAVY, BLUE } from "../../theme";
 
@@ -9,6 +9,7 @@ const ADMIN_BASE = "/nexrnn/master_nexrnn/admin";
 export default function AdminLayout() {
   const { user, isAdmin, loading, signOut, isSupabaseConfigured } = useAuth();
   const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
   if (!isSupabaseConfigured) {
     return (
@@ -51,11 +52,12 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="h-screen flex overflow-hidden bg-slate-50">
-      <aside className="w-60 h-screen shrink-0 sticky top-0 text-white flex flex-col overflow-y-auto" style={{ backgroundColor: NAVY }}>
-        <div className="px-5 py-6 flex items-center gap-2">
-          <ShieldCheck size={20} style={{ color: BLUE }} />
-          <span className="font-extrabold text-sm">NEXRNN ADMIN</span>
+    <div className="min-h-screen lg:h-screen flex overflow-hidden bg-slate-50">
+      {sidebarOpen && <button type="button" aria-label="Close admin navigation" onClick={() => setSidebarOpen(false)} className="fixed inset-0 z-40 bg-black/60 lg:hidden" />}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[88vw] shrink-0 text-white flex flex-col overflow-y-auto transition-transform duration-200 lg:static lg:z-auto lg:w-60 lg:h-screen lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`} style={{ backgroundColor: NAVY }}>
+        <div className="px-5 py-5 sm:py-6 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2"><ShieldCheck size={20} style={{ color: BLUE }} /><span className="font-extrabold text-sm">NEXRNN ADMIN</span></div>
+          <button type="button" onClick={() => setSidebarOpen(false)} className="lg:hidden w-9 h-9 rounded-md flex items-center justify-center text-slate-300 hover:bg-white/10" aria-label="Close admin navigation"><X size={19} /></button>
         </div>
         <nav className="flex-1 px-3 space-y-1">
           {navItems.map((item) => {
@@ -65,14 +67,15 @@ export default function AdminLayout() {
                 key={item.to}
                 to={item.to}
                 end={item.end}
+                onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-2 px-3 py-2.5 rounded-md text-sm font-semibold ${
+                  `flex items-center gap-2 px-3 py-3 rounded-md text-sm font-semibold ${
                     isActive ? "text-white" : "text-slate-300 hover:bg-white/5"
                   }`
                 }
                 style={({ isActive }) => (isActive ? { backgroundColor: BLUE } : {})}
               >
-                <Icon size={15} /> {item.label}
+                <Icon size={16} /> {item.label}
               </NavLink>
             );
           })}
@@ -80,14 +83,19 @@ export default function AdminLayout() {
         <div className="px-3 pb-5">
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-md text-sm font-semibold text-slate-300 hover:bg-white/5"
+            className="w-full flex items-center gap-2 px-3 py-3 rounded-md text-sm font-semibold text-slate-300 hover:bg-white/5"
           >
-            <LogOut size={15} /> Sign Out
+            <LogOut size={16} /> Sign Out
           </button>
         </div>
       </aside>
 
-      <main className="flex-1 min-w-0 h-screen overflow-y-auto">
+      <main className="flex-1 min-w-0 min-h-screen lg:h-screen overflow-y-auto">
+        <div className="lg:hidden sticky top-0 z-30 h-14 flex items-center justify-between gap-3 px-4 sm:px-6 text-white shadow-sm" style={{ backgroundColor: NAVY }}>
+          <button type="button" onClick={() => setSidebarOpen(true)} className="w-9 h-9 rounded-md flex items-center justify-center hover:bg-white/10" aria-label="Open admin navigation"><Menu size={20} /></button>
+          <span className="font-extrabold text-sm tracking-wide">NEXRNN ADMIN</span>
+          <span className="w-9" aria-hidden="true" />
+        </div>
         <Outlet />
       </main>
     </div>
