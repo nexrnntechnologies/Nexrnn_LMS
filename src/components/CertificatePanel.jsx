@@ -4,25 +4,38 @@ import { BLUE, NAVY } from "../theme";
 import { downloadCertificatePdf } from "../lib/certificates.js";
 
 export default function CertificatePanel({ course, certificate, studentName, registrationId, onBack }) {
-  const [shareMessage, setShareMessage] = useState("");
+  const [actionMessage, setActionMessage] = useState("");
   const certificateType = course.courseType === "workshop" ? "Workshop" : (certificate?.certificate_type || "Course");
   const issuedDate = useMemo(() => certificate?.issued_at ? new Date(certificate.issued_at).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" }) : new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" }), [certificate?.issued_at]);
   const shareUrl = typeof window !== "undefined"
     ? `${window.location.origin}/verify-certificate?id=${encodeURIComponent(registrationId)}`
     : `/verify-certificate?id=${encodeURIComponent(registrationId)}`;
 
-  const handleShare = async () => {
-    setShareMessage("");
+  const handleCopy = async () => {
+    setActionMessage("");
     try {
-      if (navigator.share) {
-        await navigator.share({ title: `${course.title} Certificate`, text: `${studentName}'s Nexrnn certificate`, url: shareUrl });
-        setShareMessage("Certificate link shared.");
-      } else {
-        await navigator.clipboard.writeText(shareUrl);
-        setShareMessage("Certificate link copied.");
+      if (!navigator.clipboard?.writeText) {
+        setActionMessage("Copy is not supported in this browser.");
+        return;
       }
+      await navigator.clipboard.writeText(shareUrl);
+      setActionMessage("Certificate link copied.");
+    } catch {
+      setActionMessage("The link could not be copied. Please try again.");
+    }
+  };
+
+  const handleShare = async () => {
+    setActionMessage("");
+    if (!navigator.share) {
+      setActionMessage("Sharing is not supported in this browser. Use Copy link instead.");
+      return;
+    }
+    try {
+      await navigator.share({ title: `${course.title} Certificate`, text: `${studentName}'s Nexrnn certificate`, url: shareUrl });
+      setActionMessage("Certificate link shared.");
     } catch (error) {
-      if (error?.name !== "AbortError") setShareMessage("Copy the link from your browser address bar to share it.");
+      if (error?.name !== "AbortError") setActionMessage("The certificate link could not be shared.");
     }
   };
 
@@ -43,7 +56,7 @@ export default function CertificatePanel({ course, certificate, studentName, reg
       </div>
     </div>
 
-    <div className="flex flex-wrap items-center gap-3 mt-5"><button onClick={() => downloadCertificatePdf({ studentName, courseName: `${course.title} ${certificateType}`, registrationId, issuedDate })} className="flex items-center gap-2 text-sm font-bold text-white px-4 py-2.5 rounded-md hover:opacity-90" style={{ backgroundColor: BLUE }}><Download size={15} /> Download PDF</button><button onClick={handleShare} className="flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50"><Share2 size={15} /> Share Link</button><button onClick={handleShare} className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800"><LinkIcon size={14} /> Copy link</button></div>{shareMessage && <p className="text-sm text-slate-500 mt-3">{shareMessage}</p>}
+    <div className="flex flex-wrap items-center gap-3 mt-5"><button onClick={() => downloadCertificatePdf({ studentName, courseName: `${course.title} ${certificateType}`, registrationId, issuedDate })} className="flex items-center gap-2 text-sm font-bold text-white px-4 py-2.5 rounded-md hover:opacity-90" style={{ backgroundColor: BLUE }}><Download size={15} /> Download PDF</button><button onClick={handleShare} className="flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50"><Share2 size={15} /> Share Link</button><button onClick={handleCopy} className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800"><LinkIcon size={14} /> Copy link</button></div>{actionMessage && <p className="text-sm text-slate-500 mt-3">{actionMessage}</p>}
     <p className="text-xs text-slate-400 mt-4">Anyone with this link can open this certificate page on this device. The recipient may need to sign in to the LMS.</p>
   </div>;
 }

@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, BookOpen, Users, Bell, User, UserRound, ChevronDown, LifeBuoy, LogOut, ExternalLink, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, BookOpen, Users, Bell, User, UserRound, ChevronDown, LifeBuoy, LogOut, ExternalLink, ShieldCheck, Menu, X } from "lucide-react";
 import Logo from "./Logo.jsx";
 import { NAVY, BLUE } from "../theme";
 
@@ -10,6 +10,7 @@ export default function NavBar({
 }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const [mobileOpen, setMobileOpen] = React.useState(false);
   const homePath = isAuthenticated ? "/dashboard" : "/";
   const navItems = [
     ...(isAuthenticated ? [{ to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, match: (path) => path === "/dashboard" }] : []),
@@ -21,9 +22,11 @@ export default function NavBar({
   return <header className="sticky top-0 z-30 bg-white border-b border-slate-200">
     <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
       <Link to={homePath} className="shrink-0"><Logo /></Link>
-      <nav className="hidden md:flex items-center gap-1">
-        {navItems.map((item) => { const Icon = item.icon; const active = item.match(location.pathname); return <Link key={item.to} to={item.to} className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-semibold transition ${active ? "text-white" : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"}`} style={active ? { backgroundColor: NAVY } : {}}><Icon size={15} /> {item.label}</Link>; })}
+      <nav className="hidden lg:flex items-center gap-1">
+        {navItems.map((item) => { const Icon = item.icon; const active = item.match(location.pathname); return <Link key={item.to} to={item.to} onClick={() => setMobileOpen(false)} className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-semibold transition ${active ? "text-white" : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"}`} style={active ? { backgroundColor: NAVY } : {}}><Icon size={15} /> {item.label}</Link>; })}
       </nav>
+
+      <button type="button" onClick={() => setMobileOpen((current) => !current)} className="lg:hidden ml-auto w-9 h-9 rounded-md border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50" aria-label={mobileOpen ? "Close navigation" : "Open navigation"}>{mobileOpen ? <X size={18} /> : <Menu size={18} />}</button>
 
       {isAuthenticated ? <div className="flex items-center gap-3">
         <div className="relative" onClick={(event) => event.stopPropagation()}>
@@ -36,5 +39,6 @@ export default function NavBar({
         </div>
       </div> : <div className="flex items-center gap-2"><Link to="/verify-certificate" className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-slate-600 px-3 py-2 rounded-md hover:bg-slate-50"><ShieldCheck size={15} /> Verify Certificate</Link><Link to="/login" className="text-sm font-semibold text-slate-600 px-3 py-2 rounded-md hover:bg-slate-50">Log in</Link><Link to="/createaccount" className="text-sm font-bold text-white px-3 py-2 rounded-md hover:opacity-90" style={{ backgroundColor: BLUE }}>Create account</Link></div>}
     </div>
+    {mobileOpen && <nav className="lg:hidden border-t border-slate-200 bg-white px-4 py-3 shadow-sm">{navItems.map((item) => { const Icon = item.icon; const active = item.match(location.pathname); return <Link key={item.to} to={item.to} onClick={() => setMobileOpen(false)} className={`flex items-center gap-2 px-3 py-3 rounded-md text-sm font-semibold ${active ? "text-white" : "text-slate-700 hover:bg-slate-50"}`} style={active ? { backgroundColor: NAVY } : {}}><Icon size={16} /> {item.label}</Link>; })}</nav>}
   </header>;
 }
