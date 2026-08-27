@@ -191,8 +191,9 @@ nexrnn-lms/
    npm run build
    ```
    Output goes to `dist/` — deploy this to Vercel or any static host.
-   Since this is a single-page app with client-side routing, make sure your host
-   rewrites all unknown paths to `index.html` (Vercel does this automatically for Vite apps).
+   Since this is a single-page app with client-side routing, the included `vercel.json`
+   rewrites all unknown paths to `index.html`. Keep this file when deploying to Vercel or
+   configure the equivalent SPA fallback on another host.
 
 ## Connecting Supabase (optional, do this whenever you're ready)
 
